@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestionnaire — MathoDuo</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+/* ════════════════════════════════════════════════════
+   GESTIONNAIRE — tokens alignés sur l'app principale
+════════════════════════════════════════════════════ */
+:root {
+  --primary:       #4F46E5;
+  --primary-light: #818CF8;
+  --primary-dark:  #3730A3;
+  --primary-faint: #EEF2FF;
+  --success:       #10B981;
+  --success-faint: #ECFDF5;
+  --danger:        #EF4444;
+  --danger-faint:  #FEF2F2;
+  --warning:       #F59E0B;
+  --warning-faint: #FFFBEB;
+  --xp:            #FBBF24;
+  --pink:          #EC4899;
+
+  --bg:        #F0F3FA;
+  --surface:   #FFFFFF;
+  --surface-2: #F7F9FF;
+  --surface-3: #EEF2FF;
+  --border:    #E2E8F0;
+  --border-2:  #CBD5E1;
+  --text:      #1E293B;
+  --muted:     #64748B;
+  --light:     #94A3B8;
+
+  --r-xs: 6px;  --r-sm: 10px;  --r-md: 14px;
+  --r-lg: 18px; --r-xl: 24px;  --r-full: 9999px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 14px rgba(0,0,0,.08);
+  --shadow-lg: 0 10px 32px rgba(0,0,0,.10);
+  --t: 150ms ease;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body,#root{height:100%;}
+body{
+  font-family:'Outfit',system-ui,sans-serif;
+  background:var(--bg); color:var(--text);
+  line-height:1.5; -webkit-font-smoothing:antialiased;
+  overflow:hidden; font-size:14px;
+}
+button{font-family:inherit;cursor:pointer;}
+input,textarea,select{font-family:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--primary-light);}
+
+/* ── LAYOUT ── */
+.g-app{height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+.g-topbar{
+  display:flex;align-items:center;gap:12px;
+  padding:0 20px;height:52px;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.g-topbar__brand{
+  display:flex;align-items:center;gap:8px;
+  font-size:1.1rem;font-weight:900;color:var(--text);
+}
+.g-topbar__brand em{font-style:normal;color:var(--primary);}
+.g-topbar__sep{width:1px;height:20px;background:var(--border);}
+.g-topbar__title{font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
+.g-topbar__actions{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.g-topbar__stat{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:4px;}
+.g-body{display:flex;flex:1;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.g-sidebar{
+  background:var(--surface);border-right:1px solid var(--border);
+  overflow:hidden auto;flex-shrink:0;display:flex;flex-direction:column;
+}
+.g-tree-level{border-bottom:1px solid var(--border);}
+.g-tree-level-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px 6px;font-size:.68rem;font-weight:900;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--primary);
+}
+.g-tree-level-header button{
+  background:none;border:none;color:var(--primary);cursor:pointer;
+  font-size:.8rem;opacity:.6;transition:opacity var(--t);
+  padding:2px 5px;border-radius:var(--r-xs);
+}
+.g-tree-level-header button:hover{opacity:1;background:var(--primary-faint);}
+.g-tree-subject-header{
+  display:flex;align-items:center;gap:7px;padding:6px 14px;
+  font-size:.75rem;font-weight:700;color:var(--muted);
+}
+.g-tree-subject-header .g-add-btn{
+  margin-left:auto;background:none;border:none;color:var(--primary);
+  cursor:pointer;font-size:1rem;opacity:.5;padding:2px 4px;
+  border-radius:var(--r-xs);transition:all var(--t);
+}
+.g-tree-subject-header .g-add-btn:hover{opacity:1;background:var(--primary-faint);}
+.g-tree-chapter{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 12px 7px 16px;cursor:pointer;
+  border-left:2px solid transparent;transition:all var(--t);user-select:none;
+}
+.g-tree-chapter:hover{background:var(--surface-2);}
+.g-tree-chapter.active{background:var(--primary-faint);border-left-color:var(--primary);}
+.g-tree-chapter__icon{font-size:.85rem;flex-shrink:0;}
+.g-tree-chapter__label{
+  font-size:.75rem;font-weight:600;color:var(--muted);
+  flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.g-tree-chapter.active .g-tree-chapter__label{color:var(--primary);}
+.g-tree-chapter__count{font-size:.68rem;color:var(--light);flex-shrink:0;}
+.g-tree-chapter__add{
+  background:none;border:none;color:var(--primary);cursor:pointer;
+  font-size:.9rem;opacity:0;padding:2px 3px;border-radius:3px;transition:all var(--t);flex-shrink:0;
+}
+.g-tree-chapter:hover .g-tree-chapter__add{opacity:.55;}
+.g-tree-chapter__add:hover{opacity:1!important;background:var(--primary-faint);}
+.g-tree-notion{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 12px 5px 30px;cursor:pointer;
+  border-left:2px solid transparent;transition:all var(--t);user-select:none;
+}
+.g-tree-notion:hover{background:var(--surface-2);}
+.g-tree-notion.active{background:var(--primary-faint);border-left-color:var(--primary-light);}
+.g-tree-notion__dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.g-tree-notion__label{font-size:.72rem;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.g-tree-notion.active .g-tree-notion__label{color:var(--primary);font-weight:600;}
+.g-badge-new{
+  font-size:.55rem;font-weight:800;color:var(--success);
+  background:var(--success-faint);border:1px solid #6EE7B7;
+  border-radius:3px;padding:1px 4px;flex-shrink:0;
+}
+.g-badge-l1{
+  font-size:.55rem;font-weight:800;color:var(--pink);
+  background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.3);
+  border-radius:3px;padding:1px 4px;flex-shrink:0;
+}
+.g-splitter{
+  width:4px;background:var(--border);cursor:col-resize;flex-shrink:0;transition:background var(--t);
+}
+.g-splitter:hover,.g-splitter.dragging{background:var(--primary);}
+
+/* ── MAIN ── */
+.g-main{flex:1;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);}
+
+/* ── CHAPTER VIEW ── */
+.g-chapter-view{padding:28px 30px;overflow:hidden auto;height:100%;}
+.g-chapter-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:16px;margin-bottom:20px;flex-wrap:wrap;
+}
+.g-chapter-icon{
+  width:48px;height:48px;border-radius:var(--r-lg);
+  background:var(--primary-faint);border:1px solid #C7D2FE;
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;
+}
+.g-chapter-title{font-size:1.2rem;font-weight:800;color:var(--text);}
+.g-chapter-desc{font-size:.78rem;color:var(--muted);margin-top:2px;}
+.g-chapter-meta{display:flex;gap:12px;margin-top:5px;flex-wrap:wrap;}
+.g-chapter-meta span{font-size:.72rem;font-weight:600;}
+.g-progress-bar{
+  height:6px;background:var(--border);border-radius:var(--r-full);
+  overflow:hidden;margin-bottom:22px;
+}
+.g-progress-fill{
+  height:100%;border-radius:var(--r-full);
+  background:linear-gradient(90deg,var(--primary),var(--primary-light));
+  transition:width 500ms ease;
+}
+.g-notions-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;
+}
+.g-notion-card{
+  background:var(--surface);border:2px solid var(--border);
+  border-bottom:3px solid var(--border-2);border-radius:var(--r-xl);
+  padding:14px 16px;cursor:pointer;transition:all var(--t);position:relative;
+}
+.g-notion-card:hover{border-color:var(--primary);border-bottom-color:var(--primary-dark);transform:translateY(-1px);box-shadow:var(--shadow-md);}
+.g-notion-card.l1{border-color:rgba(236,72,153,.25);}
+.g-notion-card.l1:hover{border-color:var(--pink);}
+.g-notion-card__header{display:flex;align-items:flex-start;gap:9px;margin-bottom:7px;}
+.g-notion-card__num{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--primary-faint);display:flex;align-items:center;justify-content:center;
+  font-size:.68rem;font-weight:900;color:var(--primary);flex-shrink:0;
+}
+.g-notion-card.l1 .g-notion-card__num{background:rgba(236,72,153,.1);color:var(--pink);}
+.g-notion-card__name{font-size:.82rem;font-weight:700;color:var(--text);line-height:1.35;flex:1;}
+.g-notion-card__status{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.g-notion-card__text{
+  font-size:.72rem;color:var(--muted);line-height:1.5;margin-bottom:9px;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+.g-notion-card__blocks{display:flex;flex-wrap:wrap;gap:3px;align-items:center;}
+.g-notion-card__block-chip{font-size:.65rem;padding:2px 6px;border-radius:20px;font-weight:600;}
+.g-notion-card__qcount{font-size:.65rem;color:var(--muted);margin-left:auto;}
+
+/* ── EDITEUR ── */
+.g-editor{display:flex;flex-direction:column;height:100%;background:#fff;}
+.g-editor-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 18px;background:var(--surface);border-bottom:1px solid var(--border);
+  flex-shrink:0;gap:10px;
+}
+.g-editor-name{font-size:.88rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;}
+.g-editor-meta{font-size:.68rem;color:var(--primary);margin-top:1px;font-family:'JetBrains Mono',monospace;}
+.g-editor-tabs{
+  display:flex;border-bottom:1px solid var(--border);
+  background:var(--surface);flex-shrink:0;
+}
+.g-editor-tab{
+  padding:9px 16px;border:none;border-bottom:2px solid transparent;
+  background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;
+  font-size:.75rem;font-weight:700;cursor:pointer;transition:all var(--t);white-space:nowrap;
+}
+.g-editor-tab:hover{color:var(--text);}
+.g-editor-tab.active{color:var(--primary);border-bottom-color:var(--primary);background:var(--primary-faint);}
+.g-editor-body{flex:1;overflow:hidden auto;padding:18px 20px;}
+
+/* ── BLOCS ── */
+.g-block-adder{
+  background:var(--surface-2);border:1.5px dashed var(--border-2);
+  border-radius:var(--r-md);padding:12px 14px;margin-bottom:14px;
+}
+.g-block-adder-title{
+  font-size:.68rem;font-weight:800;color:var(--primary);
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;
+}
+.g-block-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.g-block-chip-btn{
+  display:flex;align-items:center;gap:4px;padding:4px 10px;
+  border-radius:20px;border:1.5px solid;background:transparent;
+  font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:700;
+  cursor:pointer;transition:all var(--t);
+}
+.g-block-chip-btn:hover{opacity:.8;filter:brightness(1.05);}
+.g-block{
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:var(--r-md);overflow:hidden;margin-bottom:8px;transition:border-color var(--t);
+}
+.g-block:hover{border-color:var(--border-2);}
+.g-block-header{
+  display:flex;align-items:center;gap:8px;padding:8px 12px;
+  background:var(--surface-2);border-bottom:1px solid var(--border);
+}
+.g-block-type-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.g-block-type-label{font-size:.72rem;font-weight:700;flex:1;}
+.g-block-actions{display:flex;gap:1px;}
+.g-block-action-btn{
+  background:none;border:none;cursor:pointer;color:var(--muted);
+  padding:3px 5px;border-radius:3px;font-size:.75rem;transition:all var(--t);
+}
+.g-block-action-btn:hover{background:var(--border);color:var(--text);}
+.g-block-action-btn.del:hover{background:var(--danger-faint);color:var(--danger);}
+.g-block-body{padding:10px 12px;display:flex;flex-direction:column;gap:9px;}
+
+/* ── CHAMPS ── */
+.g-field-group{display:flex;flex-direction:column;gap:4px;}
+.g-field-label{
+  font-size:.68rem;font-weight:700;color:var(--primary);
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.g-field{
+  width:100%;background:var(--surface-2);border:1.5px solid var(--border);
+  border-radius:var(--r-sm);color:var(--text);padding:7px 10px;
+  font-family:'JetBrains Mono',monospace;font-size:.8rem;outline:none;
+  resize:vertical;transition:border-color var(--t);
+}
+.g-field:focus{border-color:var(--primary);background:#fff;}
+.g-field::placeholder{color:var(--light);}
+select.g-field{resize:none;cursor:pointer;font-family:'Outfit',sans-serif;}
+.g-field-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+
+/* ── BOUTONS ── */
+.g-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:8px 16px;border:none;border-radius:var(--r-md);
+  font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:700;
+  cursor:pointer;transition:all var(--t);letter-spacing:.01em;white-space:nowrap;
+}
+.g-btn:disabled{opacity:.4;cursor:not-allowed;}
+.g-btn-primary{background:var(--primary);color:#fff;border-bottom:3px solid var(--primary-dark);}
+.g-btn-primary:not(:disabled):hover{filter:brightness(1.06);}
+.g-btn-primary:not(:disabled):active{transform:translateY(2px);border-bottom-width:1px;}
+.g-btn-ghost{background:var(--surface);color:var(--muted);border:2px solid var(--border-2);}
+.g-btn-ghost:not(:disabled):hover{background:var(--surface-2);color:var(--text);border-color:var(--primary);}
+.g-btn-danger{background:var(--danger-faint);color:var(--danger);border:1.5px solid #FCA5A5;}
+.g-btn-danger:not(:disabled):hover{background:#fee2e2;}
+.g-btn-success{background:var(--success-faint);color:var(--success);border:1.5px solid #6EE7B7;}
+.g-btn-sm{padding:5px 11px;font-size:.72rem;border-radius:var(--r-sm);}
+
+/* ── MODALS ── */
+.g-modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);animation:gFadeIn 150ms ease;
+}
+@keyframes gFadeIn{from{opacity:0}to{opacity:1}}
+.g-modal{
+  background:var(--surface);border:1.5px solid var(--border-2);
+  border-radius:var(--r-xl);padding:24px;width:100%;max-width:500px;
+  max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);
+  animation:gSlideUp 200ms ease;
+}
+@keyframes gSlideUp{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.g-modal.wide{max-width:660px;}
+.g-modal.xl{max-width:900px;max-height:95vh;}
+.g-modal-title{font-size:1rem;font-weight:800;color:var(--text);margin-bottom:3px;display:flex;align-items:center;gap:7px;}
+.g-modal-sub{font-size:.78rem;color:var(--muted);margin-bottom:18px;}
+.g-modal-footer{
+  display:flex;gap:7px;justify-content:flex-end;margin-top:18px;
+  padding-top:14px;border-top:1px solid var(--border);
+}
+
+/* Icon grid */
+.g-icon-grid{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px;}
+.g-icon-btn{
+  width:34px;height:34px;border-radius:var(--r-sm);
+  border:2px solid var(--border);background:var(--surface-2);
+  font-size:.95rem;cursor:pointer;transition:all var(--t);
+  display:flex;align-items:center;justify-content:center;
+}
+.g-icon-btn:hover{border-color:var(--primary-light);background:var(--primary-faint);}
+.g-icon-btn.selected{border-color:var(--primary);background:var(--primary-faint);}
+
+/* ── CONTEXT MENU ── */
+.g-ctx{
+  position:fixed;z-index:9999;background:var(--surface);
+  border:1.5px solid var(--border-2);border-radius:var(--r-md);
+  padding:4px 0;min-width:180px;box-shadow:var(--shadow-lg);
+  animation:gCtxIn 100ms ease;
+}
+@keyframes gCtxIn{from{opacity:0;transform:scale(.93) translateY(-4px)}to{opacity:1;transform:none}}
+.g-ctx-item{
+  display:flex;align-items:center;gap:9px;padding:7px 14px;
+  font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all var(--t);
+}
+.g-ctx-item:hover{background:var(--primary-faint);color:var(--primary);}
+.g-ctx-item.danger{color:var(--danger);}
+.g-ctx-item.danger:hover{background:var(--danger-faint);}
+.g-ctx-sep{height:1px;background:var(--border);margin:3px 0;}
+.g-ctx-item__icon{font-size:.85rem;width:16px;text-align:center;}
+
+/* ── WELCOME ── */
+.g-welcome{
+  display:flex;flex-direction:column;align-items:center;
+  padding:40px 28px;height:100%;overflow:auto;
+}
+.g-welcome-logo{
+  width:64px;height:64px;background:var(--primary-faint);border-radius:var(--r-xl);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;font-weight:900;color:var(--primary);margin-bottom:14px;
+}
+.g-welcome-title{font-size:1.3rem;font-weight:900;color:var(--text);margin-bottom:5px;}
+.g-welcome-sub{font-size:.82rem;color:var(--muted);margin-bottom:28px;text-align:center;max-width:480px;line-height:1.7;}
+.g-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:420px;margin-bottom:28px;}
+.g-stat-card{
+  background:var(--surface);border:2px solid var(--border);border-bottom:3px solid var(--border-2);
+  border-radius:var(--r-xl);padding:14px;text-align:center;
+}
+.g-stat-card__icon{font-size:1.3rem;margin-bottom:4px;}
+.g-stat-card__val{font-size:1.5rem;font-weight:900;}
+.g-stat-card__lbl{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.g-tips{display:flex;flex-direction:column;gap:8px;width:100%;max-width:480px;}
+.g-tip{
+  display:flex;align-items:flex-start;gap:10px;background:var(--surface);
+  border:1.5px solid var(--border);border-radius:var(--r-md);padding:11px 14px;transition:border-color var(--t);
+}
+.g-tip:hover{border-color:var(--primary-light);}
+.g-tip__icon{font-size:1.1rem;flex-shrink:0;margin-top:1px;}
+.g-tip__title{font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:2px;}
+.g-tip__desc{font-size:.72rem;color:var(--muted);line-height:1.55;}
+
+/* ── TOAST ── */
+.g-toast{
+  position:fixed;bottom:20px;right:20px;z-index:9999;
+  display:flex;align-items:center;gap:7px;
+  background:var(--surface);border:1.5px solid #6EE7B7;border-left:3px solid var(--success);
+  color:var(--success);border-radius:var(--r-md);padding:10px 16px;
+  font-size:.78rem;font-weight:600;box-shadow:var(--shadow-lg);
+  animation:gToastIn 200ms ease;pointer-events:none;
+}
+@keyframes gToastIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+/* ── LOADING ── */
+.g-loading{
+  height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;
+}
+.g-loading__spinner{
+  width:36px;height:36px;border:3px solid var(--primary-faint);
+  border-top-color:var(--primary);border-radius:50%;animation:gSpin 700ms linear infinite;
+}
+@keyframes gSpin{to{transform:rotate(360deg)}}
+.g-loading__text{font-size:.82rem;color:var(--primary);font-weight:600;}
+
+/* ── LEVELS ── */
+.g-level-row{
+  display:flex;align-items:center;gap:7px;padding:7px 12px;
+  background:var(--surface-2);border:1.5px solid var(--border);
+  border-radius:var(--r-sm);margin-bottom:7px;
+}
+.g-level-row__name{font-size:.72rem;color:var(--text);font-weight:600;flex:1;}
+.g-level-row__count{font-size:.72rem;color:var(--muted);}
+.g-level-q{
+  padding:5px 12px;font-size:.72rem;color:var(--muted);
+  border-bottom:1px solid var(--border);
+}
+.g-level-q__type{color:var(--primary);margin-right:5px;font-family:'JetBrains Mono',monospace;}
+.g-empty{
+  text-align:center;padding:40px 18px;background:var(--surface);
+  border:1.5px dashed var(--border-2);border-radius:var(--r-xl);
+}
+.g-empty__icon{font-size:2rem;margin-bottom:8px;}
+.g-empty__text{font-size:.82rem;color:var(--muted);margin-bottom:14px;}
+
+/* ── SVG PREVIEW ── */
+.g-svg-preview{
+  border-radius:var(--r-sm);overflow:hidden;
+  border:1.5px solid var(--border);margin-top:8px;
+  background:#0D1117;max-height:220px;
+  display:flex;align-items:center;justify-content:center;
+}
+.g-svg-preview svg{width:100%;height:auto;display:block;}
+
+/* ── CODE BLOCK ── */
+.g-code-block{
+  background:#0F172A;border:1.5px solid #1E293B;border-radius:var(--r-md);
+  padding:14px;font-size:.72rem;color:#A5B4FC;line-height:1.75;
+  overflow:auto;max-height:calc(100vh - 240px);font-family:'JetBrains Mono',monospace;
+}
+
+/* ── FOLDER BANNER ── */
+.g-folder-banner{
+  display:flex;align-items:center;gap:10px;padding:0 18px;height:34px;
+  background:var(--primary-faint);border-bottom:1px solid #C7D2FE;
+  font-size:.72rem;flex-shrink:0;
+}
+.g-folder-banner__icon{font-size:.9rem;}
+.g-folder-banner__path{
+  font-family:'JetBrains Mono',monospace;color:var(--primary-dark);
+  font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.g-folder-banner__status{font-size:.68rem;color:var(--success);font-weight:700;}
+.g-folder-banner__status.saving{color:var(--warning);}
+.g-folder-banner__status.error{color:var(--danger);}
+.g-folder-banner__btn{
+  background:var(--primary);border:none;color:#fff;
+  font-size:.68rem;font-weight:700;padding:3px 9px;
+  border-radius:var(--r-full);cursor:pointer;transition:filter var(--t);
+}
+.g-folder-banner__btn:hover{filter:brightness(1.08);}
+
+/* ══════════════════════════════════════════════════
+   CONSTRUCTEUR DE GRAPHIQUE SVG
+══════════════════════════════════════════════════ */
+.svg-builder{display:flex;flex-direction:column;gap:0;height:100%;}
+.svg-builder__layout{display:flex;flex:1;gap:0;min-height:0;overflow:hidden;}
+
+/* Panneau gauche - outils */
+.svg-tools{
+  width:240px;flex-shrink:0;border-right:1px solid var(--border);
+  overflow-y:auto;background:var(--surface-2);display:flex;flex-direction:column;gap:0;
+}
+.svg-tools-section{border-bottom:1px solid var(--border);padding:10px 12px;}
+.svg-tools-title{
+  font-size:.65rem;font-weight:800;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--primary);margin-bottom:8px;
+}
+.svg-tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+.svg-tool-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:7px 4px;border-radius:var(--r-sm);
+  border:1.5px solid var(--border);background:var(--surface);
+  cursor:pointer;transition:all var(--t);font-size:.58rem;font-weight:700;color:var(--muted);
+}
+.svg-tool-btn:hover{border-color:var(--primary-light);color:var(--primary);background:var(--primary-faint);}
+.svg-tool-btn.active{border-color:var(--primary);color:var(--primary);background:var(--primary-faint);}
+.svg-tool-btn svg,.svg-tool-btn span.tool-icon{font-size:1rem;}
+.svg-prop-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.svg-prop-label{font-size:.68rem;color:var(--muted);min-width:56px;font-weight:600;}
+.svg-prop-input{
+  flex:1;background:var(--surface-3);border:1.5px solid var(--border);
+  border-radius:var(--r-xs);color:var(--text);padding:4px 7px;
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;outline:none;
+  transition:border-color var(--t);
+}
+.svg-prop-input:focus{border-color:var(--primary);}
+input[type="color"].svg-prop-input{padding:1px 2px;width:36px;height:26px;cursor:pointer;}
+input[type="range"].svg-prop-input{padding:0;cursor:pointer;accent-color:var(--primary);}
+
+/* Canvas central */
+.svg-canvas-wrap{
+  flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;
+}
+.svg-canvas-toolbar{
+  display:flex;align-items:center;gap:6px;padding:8px 12px;
+  background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;
+}
+.svg-canvas-area{
+  flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;
+  background:repeating-casing-pattern;padding:16px;
+  background-color:#e8ecf5;
+  background-image:linear-gradient(rgba(99,102,241,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(99,102,241,.06) 1px,transparent 1px);
+  background-size:20px 20px;
+}
+.svg-canvas-area svg{
+  display:block;box-shadow:0 4px 20px rgba(0,0,0,.18);border-radius:var(--r-sm);
+  cursor:crosshair;
+}
+
+/* Panneau droit - éléments */
+.svg-elements{
+  width:200px;flex-shrink:0;border-left:1px solid var(--border);
+  background:var(--surface-2);overflow-y:auto;
+}
+.svg-el-item{
+  display:flex;align-items:center;gap:7px;padding:7px 10px;
+  border-bottom:1px solid var(--border);cursor:pointer;
+  font-size:.72rem;color:var(--muted);transition:all var(--t);
+}
+.svg-el-item:hover{background:var(--surface-3);color:var(--text);}
+.svg-el-item.sel{background:var(--primary-faint);color:var(--primary);}
+.svg-el-icon{font-size:.85rem;width:16px;text-align:center;flex-shrink:0;}
+.svg-el-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.svg-el-del{
+  background:none;border:none;color:var(--light);cursor:pointer;
+  font-size:.7rem;padding:1px 4px;border-radius:3px;opacity:0;transition:all var(--t);
+}
+.svg-el-item:hover .svg-el-del{opacity:1;}
+.svg-el-del:hover{background:var(--danger-faint);color:var(--danger);}
+
+/* Templates présets */
+.svg-tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.svg-tpl-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:7px 4px;border-radius:var(--r-sm);border:1.5px solid var(--border);
+  background:var(--surface);cursor:pointer;transition:all var(--t);
+  font-size:.6rem;font-weight:700;color:var(--muted);text-align:center;
+}
+.svg-tpl-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-faint);}
+.svg-tpl-preview{
+  width:80px;height:48px;border-radius:3px;overflow:hidden;
+  background:#0D1117;border:1px solid #1E293B;
+}
+.svg-tpl-preview svg{width:100%;height:100%;}
+
+/* Barre inférieure code */
+.svg-code-bar{
+  flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+}
+.svg-code-toggle{
+  display:flex;align-items:center;gap:8px;padding:7px 14px;
+  cursor:pointer;font-size:.72rem;font-weight:700;color:var(--muted);
+  transition:color var(--t);user-select:none;
+}
+.svg-code-toggle:hover{color:var(--primary);}
+.svg-code-area{
+  padding:0 14px 12px;
+}
+.svg-code-area textarea{
+  width:100%;background:#0F172A;border:1.5px solid #1E293B;
+  border-radius:var(--r-sm);color:#A5B4FC;
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;
+  line-height:1.65;padding:10px;outline:none;resize:vertical;
+  transition:border-color var(--t);
+}
+.svg-code-area textarea:focus{border-color:var(--primary);}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+    const slugify = s => (s||"").toLowerCase().normalize("NFD")
+      .replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+    const genId = () => "id_"+Math.random().toString(36).slice(2,8);
+
+    const BLOCK_TYPES = [
+      {type:"definition", label:"Définition",  icon:"📌", color:"#6366f1"},
+      {type:"formula",    label:"Formule",      icon:"🔑", color:"#FBBF24"},
+      {type:"example",    label:"Exemple",      icon:"✅", color:"#10B981"},
+      {type:"warning",    label:"Attention",    icon:"⚠️", color:"#EF4444"},
+      {type:"technique",  label:"Technique",    icon:"🛠️", color:"#38BDF8"},
+      {type:"demo",       label:"Démo",         icon:"🔬", color:"#A78BFA"},
+      {type:"graph",      label:"Graphe SVG",   icon:"📈", color:"#FB923C"},
+      {type:"image",      label:"Image",        icon:"🖼️", color:"#EC4899"},
+    ];
+    const BT = Object.fromEntries(BLOCK_TYPES.map(b=>[b.type,b]));
+
+    function subjectsToProject(subjects) {
+      const structure = {};
+      Object.values(subjects).forEach(subject => {
+        Object.entries(subject.levels||{}).forEach(([levelId, level]) => {
+          if (!structure[levelId]) {
+            structure[levelId] = { id:levelId, label:level.label, color:level.color||"#4F46E5", subjects:{} };
+          }
+          structure[levelId].subjects[subject.id] = {
+            id: subject.id, label: subject.label, icon: subject.emoji||"📚",
+            chapters: (level.chapitres||[]).map(ch => ({
+              id: ch.id,
+              label: ch.title||ch.label||ch.id,
+              icon: ch.icon||"📚",
+              description: ch.description||"",
+              xpMax: ch.xpMax,
+              notions: (ch.notions||[]).map(n => ({
+                id: n.id, label: n.label, icon: n.icon,
+                lesson: n.lesson||{formula:"",text:"",example:""},
+                fullBlocks: (n.fullBlocks||[]).map((b,i)=>({...b,_id:b._id||genId()+i})),
+                levels: n.levels||Array(6).fill([]),
+                _readonly: true,
+              })),
+              l1Notions: ch.l1Bonus ? (ch.l1Bonus.notions||[]).map(n => ({
+                id: n.id+"_l1", label: n.label+" (L1)", icon: n.icon,
+                lesson: n.lesson||{formula:"",text:"",example:""},
+                fullBlocks: (n.fullBlocks||[]).map((b,i)=>({...b,_id:b._id||genId()+i})),
+                levels: n.levels||Array(6).fill([]),
+                _readonly: true, _isL1: true,
+              })) : [],
+            }))
+          };
+        });
+      });
+      return structure;
+    }
+
+    function ser(v, d=0) {
+      const i = "  ".repeat(d);
+      if (v===null||v===undefined) return "null";
+      if (typeof v==="string")  return JSON.stringify(v);
+      if (typeof v==="number"||typeof v==="boolean") return String(v);
+      if (Array.isArray(v)) {
+        if (v.length===0) return "[]";
+        return `[\n${v.map(x=>i+"  "+ser(x,d+1)).join(",\n")}\n${i}]`;
+      }
+      const skip = ["_id","_readonly","_isL1","_new"];
+      const entries = Object.entries(v)
+        .filter(([k])=>!skip.includes(k))
+        .map(([k,val])=>`${i}  ${k}: ${ser(val,d+1)}`).join(",\n");
+      return `{\n${entries}\n${i}}`;
+    }
+    function exportChapterJS(ch, sid, lid) {
+      const mapNotion = n => {
+        const fb = (n.fullBlocks||[]).map(b=>{const{_id,...r}=b;return r;});
+        return {id:n.id, label:n.label, icon:n.icon,
+                lesson:n.lesson||{}, fullBlocks:fb,
+                levels:n.levels||Array(6).fill([])};
+      };
+      const obj = {
+        id:ch.id, title:ch.label, description:ch.description||"",
+        icon:ch.icon||"📚", xpMax:ch.xpMax||200,
+        notions: (ch.notions||[]).map(mapNotion),
+        l1Bonus: (ch.l1Notions||[]).length > 0 ? {
+          notions: (ch.l1Notions||[]).map(mapNotion)
+        } : undefined,
+      };
+      if (!obj.l1Bonus) delete obj.l1Bonus;
+      return `// Chapitre: ${ch.label}\n// ${lid} > ${sid}\n// Généré le ${new Date().toLocaleDateString("fr-FR")}\n// ${(ch.notions||[]).length} notion(s)${(ch.l1Notions||[]).length ? " + "+(ch.l1Notions||[]).length+" L1" : ""}\n\nexport default ${ser(obj,0)};\n`;
+    }
+    function exportNotionJS(n, chId) {
+      const fb=(n.fullBlocks||[]).map(b=>{const{_id,...r}=b;return r;});
+      const obj={id:n.id,label:n.label,icon:n.icon,chapterId:chId,lesson:n.lesson||{},fullBlocks:fb,levels:n.levels||Array(6).fill([])};
+      return `// Notion: ${n.label}\n// ${new Date().toLocaleDateString("fr-FR")}\n\nexport default ${ser(obj,0)};\n`;
+    }
+    function dl(content, filename) {
+      const url = URL.createObjectURL(new Blob([content],{type:"text/plain;charset=utf-8"}));
+      const a = Object.assign(document.createElement("a"),{ href:url, download:filename });
+      document.body.appendChild(a); a.click();
+      setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+    }
+
+    async function exportFullStructure(merged, onProgress, onDone, onError) {
+      const sl = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+      let total = 0;
+      for (const lid of Object.keys(merged)) {
+        const lvl = merged[lid];
+        for (const sid of Object.keys(lvl.subjects||{})) {
+          for (const ch of (lvl.subjects[sid].chapters||[])) total += 1;
+        }
+      }
+      if (total === 0) { onError("Aucune donnée."); return; }
+      if (window.showDirectoryPicker) {
+        let rootDir;
+        try { rootDir = await window.showDirectoryPicker({ mode:"readwrite", startIn:"documents" }); }
+        catch(e) { if(e.name==="AbortError") return; }
+        if (rootDir) {
+          const wf = async (d,n,c) => { const f=await d.getFileHandle(n,{create:true}); const w=await f.createWritable(); await w.write(c); await w.close(); };
+          let done = 0;
+          try {
+            for (const lid of Object.keys(merged)) {
+              const lvl=merged[lid]; const lDir=await rootDir.getDirectoryHandle(sl(lvl.label||lid),{create:true});
+              for (const sid of Object.keys(lvl.subjects||{})) {
+                const subj=lvl.subjects[sid]; const sDir=await lDir.getDirectoryHandle(sl(subj.label||sid),{create:true});
+                for (const ch of (subj.chapters||[])) {
+                  const cDir=await sDir.getDirectoryHandle(sl(ch.label||ch.id),{create:true});
+                  await wf(cDir,"index.js",exportChapterJS(ch,sid,lid)); done++;
+                  onProgress(done,total,sl(lvl.label)+"/"+sl(subj.label)+"/"+sl(ch.label)+"/index.js");
+                }
+              }
+            }
+            onDone(done); return;
+          } catch(e) { onError("Erreur FSA : "+e.message); }
+        }
+      }
+      if (typeof JSZip==="undefined") { onError("JSZip non disponible."); return; }
+      const zip=new JSZip(); let done=0;
+      for (const lid of Object.keys(merged)) {
+        const lvl=merged[lid];
+        for (const sid of Object.keys(lvl.subjects||{})) {
+          const subj=lvl.subjects[sid];
+          for (const ch of (subj.chapters||[])) {
+            const base=sl(lvl.label)+"/"+sl(subj.label)+"/"+sl(ch.label)+"/";
+            zip.file(base+"index.js",exportChapterJS(ch,sid,lid)); done++;
+            onProgress(done,total,base+"index.js");
+          }
+        }
+      }
+      try {
+        const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE"},
+          m=>onProgress(Math.round(m.percent/100*total),total,"Compression ZIP…"));
+        const url=URL.createObjectURL(blob);
+        const a=Object.assign(document.createElement("a"),{href:url,download:"mathoduo-projet.zip"});
+        document.body.appendChild(a); a.click();
+        setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },300);
+        onDone(done);
+      } catch(e) { onError("Erreur ZIP : "+e.message); }
+    }
+
+    // ══════════════════════════════════════════════════
+    // CONTEXT MENU
+    // ══════════════════════════════════════════════════
+    function useCtxMenu() {
+      const [menu, setMenu] = useState(null);
+      const open = useCallback((e, items) => {
+        e.preventDefault(); e.stopPropagation();
+        const x=Math.min(e.clientX,window.innerWidth-200);
+        const y=Math.min(e.clientY,window.innerHeight-items.filter(i=>i!=="sep").length*34-16);
+        setMenu({x,y,items});
+      },[]);
+      const close = useCallback(()=>setMenu(null),[]);
+      useEffect(()=>{
+        const h=()=>close();
+        window.addEventListener("click",h);
+        window.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
+        return ()=>window.removeEventListener("click",h);
+      },[close]);
+      return {menu,open,close};
+    }
+    function CtxMenu({menu,close}) {
+      if(!menu) return null;
+      return (
+        <div className="g-ctx" style={{left:menu.x,top:menu.y}} onClick={e=>e.stopPropagation()}>
+          {menu.items.map((item,i)=>
+            item==="sep" ? <div key={i} className="g-ctx-sep"/> :
+            <div key={i} className={`g-ctx-item ${item.danger?"danger":""}`}
+              onClick={()=>{item.action();close();}}>
+              <span className="g-ctx-item__icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ══════════════════════════════════════════════════
+    // SVG GRAPH BUILDER
+    // ══════════════════════════════════════════════════
+    const SVG_W = 580, SVG_H = 260;
+    const DARK_BG = "#1e1e2e";
+
+    // Palette de couleurs catppuccin (style SVG de l'app)
+    const PALETTE = ["#cdd6f4","#89b4fa","#a6e3a1","#f38ba8","#fab387","#f9e2af","#cba6f7","#74c7ec","#6c7086","#313244"];
+
+    // Templates de graphiques prêts à l'emploi
+    const SVG_TEMPLATES = [
+      {
+        id:"axes",label:"Axes vides",icon:"📐",
+        build:(w,h)=>{
+          const px=40,py=20,bx=w-20,by=h-40;
+          return `<rect width="${w}" height="${h}" fill="${DARK_BG}" rx="8"/>
+<line x1="${px}" y1="${py}" x2="${px}" y2="${by}" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="${px}" y1="${by}" x2="${bx}" y2="${by}" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="${w/2}" y="${h-5}" text-anchor="middle" fill="#6c7086" font-family="sans-serif" font-size="10">x</text>
+<text x="12" y="${h/2}" text-anchor="middle" fill="#6c7086" font-family="sans-serif" font-size="10" transform="rotate(-90 12 ${h/2})">y</text>
+<defs><marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#475569"/></marker></defs>`;
+        }
+      },
+      {
+        id:"line",label:"Courbe",icon:"📈",
+        build:(w,h)=>{
+          const pts=[[40,220],[120,160],[200,130],[280,100],[360,70],[460,45],[540,30]];
+          const d="M"+pts.map(p=>p.join(",")).join(" L");
+          return `<rect width="${w}" height="${h}" fill="${DARK_BG}" rx="8"/>
+<line x1="40" y1="20" x2="40" y2="240" stroke="#475569" stroke-width="1.5"/>
+<line x1="40" y1="240" x2="${w-20}" y2="240" stroke="#475569" stroke-width="1.5"/>
+<path d="${d}" fill="none" stroke="#89b4fa" stroke-width="2.5"/>
+<text x="${w/2}" y="${h-5}" text-anchor="middle" fill="#6c7086" font-family="sans-serif" font-size="10">x</text>
+<text x="12" y="${h/2}" text-anchor="middle" fill="#6c7086" font-family="sans-serif" font-size="10" transform="rotate(-90 12 ${h/2})">y</text>
+<text x="200" y="65" fill="#89b4fa" font-family="sans-serif" font-size="11" font-weight="bold">f(x)</text>`;
+        }
+      },
+      {
+        id:"barchart",label:"Barres",icon:"📊",
+        build:(w,h)=>{
+          const bars=[["A",80,"#89b4fa"],["B",140,"#a6e3a1"],["C",100,"#fab387"],["D",170,"#cba6f7"],["E",60,"#f38ba8"]];
+          const bw=60,gap=28,base=220,x0=50;
+          const rects=bars.map((b,i)=>{
+            const x=x0+i*(bw+gap), bh=b[1], y=base-bh;
+            return `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${b[2]}" rx="4"/>
+<text x="${x+bw/2}" y="${base+14}" text-anchor="middle" fill="#6c7086" font-family="sans-serif" font-size="10">${b[0]}</text>`;
+          }).join("\n");
+          return `<rect width="${w}" height="${h}" fill="${DARK_BG}" rx="8"/>
+<line x1="40" y1="20" x2="40" y2="${base}" stroke="#475569" stroke-width="1"/>
+<line x1="40" y1="${base}" x2="${w-20}" y2="${base}" stroke="#475569" stroke-width="1"/>
+${rects}
+<text x="${w/2}" y="${h-4}" text-anchor="middle" fill="#6c7086" font-family="sans-serif" font-size="10">Catégories</text>`;
+        }
+      },
+      {
+        id:"scatter",label:"Nuage",icon:"🔵",
+        build:(w,h)=>{
+          const pts=[[80,80],[120,120],[160,70],[200,150],[250,100],[300,60],[350,130],[400,90],[450,160],[500,80]];
+          const dots=pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#89b4fa" opacity="0.85"/>`).join("\n");
+          return `<rect width="${w}" height="${h}" fill="${DARK_BG}" rx="8"/>
+<line x1="40" y1="20" x2="40" y2="${h-40}" stroke="#475569" stroke-width="1.5"/>
+<line x1="40" y1="${h-40}" x2="${w-20}" y2="${h-40}" stroke="#475569" stroke-width="1.5"/>
+${dots}
+<text x="${w/2}" y="${h-5}" text-anchor="middle" fill="#6c7086" font-family="sans-serif" font-size="10">x</text>
+<text x="12" y="${h/2}" text-anchor="middle" fill="#6c7086" font-family="sans-serif" font-size="10" transform="rotate(-90 12 ${h/2})">y</text>`;
+        }
+      },
+      {
+        id:"twolines",label:"2 courbes",icon:"📉",
+        build:(w,h)=>{
+          const pts1=[[40,200],[140,140],[240,100],[340,80],[460,60],[540,50]];
+          const pts2=[[40,220],[140,190],[240,170],[340,160],[460,150],[540,145]];
+          const d1="M"+pts1.map(p=>p.join(",")).join(" L");
+          const d2="M"+pts2.map(p=>p.join(",")).join(" L");
+          return `<rect width="${w}" height="${h}" fill="${DARK_BG}" rx="8"/>
+<line x1="40" y1="20" x2="40" y2="230" stroke="#475569" stroke-width="1"/>
+<line x1="40" y1="230" x2="${w-20}" y2="230" stroke="#475569" stroke-width="1"/>
+<path d="${d1}" fill="none" stroke="#89b4fa" stroke-width="2.5"/>
+<path d="${d2}" fill="none" stroke="#f38ba8" stroke-width="2.5"/>
+<rect x="${w-120}" y="20" width="90" height="38" rx="4" fill="#31324480"/>
+<line x1="${w-116}" y1="33" x2="${w-96}" y2="33" stroke="#89b4fa" stroke-width="2"/>
+<text x="${w-91}" y="37" fill="#89b4fa" font-family="sans-serif" font-size="9">Courbe A</text>
+<line x1="${w-116}" y1="48" x2="${w-96}" y2="48" stroke="#f38ba8" stroke-width="2"/>
+<text x="${w-91}" y="52" fill="#f38ba8" font-family="sans-serif" font-size="9">Courbe B</text>`;
+        }
+      },
+      {
+        id:"sincos",label:"Sin / Cos",icon:"〰️",
+        build:(w,h)=>{
+          const cx=40, cy=h/2, scale=50, xscale=80;
+          const sinPts=[], cosPts=[];
+          for(let i=0;i<=200;i++){
+            const t=i/200*2*Math.PI*2;
+            sinPts.push([cx+i*xscale/40, cy-Math.sin(t)*scale]);
+            cosPts.push([cx+i*xscale/40, cy-Math.cos(t)*scale]);
+          }
+          const sd="M"+sinPts.slice(0,Math.floor(sinPts.length*(w-60)/w)).map(p=>[Math.round(p[0]),Math.round(p[1])].join(",")).join(" L");
+          const cd="M"+cosPts.slice(0,Math.floor(cosPts.length*(w-60)/w)).map(p=>[Math.round(p[0]),Math.round(p[1])].join(",")).join(" L");
+          return `<rect width="${w}" height="${h}" fill="${DARK_BG}" rx="8"/>
+<line x1="${cx}" y1="20" x2="${cx}" y2="${h-20}" stroke="#475569" stroke-width="1"/>
+<line x1="30" y1="${cy}" x2="${w-10}" y2="${cy}" stroke="#475569" stroke-width="1"/>
+<path d="${sd}" fill="none" stroke="#a6e3a1" stroke-width="2"/>
+<path d="${cd}" fill="none" stroke="#cba6f7" stroke-width="2"/>
+<text x="80" y="20" fill="#a6e3a1" font-family="sans-serif" font-size="10">sin(x)</text>
+<text x="160" y="20" fill="#cba6f7" font-family="sans-serif" font-size="10">cos(x)</text>`;
+        }
+      },
+      {
+        id:"expodecay",label:"Expo",icon:"📉",
+        build:(w,h)=>{
+          const pts=[];
+          for(let i=0;i<=40;i++){
+            const t=i/40; pts.push([40+t*(w-60), 30+(h-60)*(1-Math.exp(-5*t))]);
+          }
+          const d="M"+pts.map(p=>[Math.round(p[0]),Math.round(p[1])].join(",")).join(" L");
+          return `<rect width="${w}" height="${h}" fill="${DARK_BG}" rx="8"/>
+<line x1="40" y1="20" x2="40" y2="${h-30}" stroke="#475569" stroke-width="1.5"/>
+<line x1="40" y1="${h-30}" x2="${w-20}" y2="${h-30}" stroke="#475569" stroke-width="1.5"/>
+<path d="${d}" fill="none" stroke="#f9e2af" stroke-width="2.5"/>
+<line x1="40" y1="30" x2="${w-20}" y2="30" stroke="#475569" stroke-width="1" stroke-dasharray="4,3" opacity=".5"/>
+<text x="${w-60}" y="44" fill="#6c7086" font-family="sans-serif" font-size="9">asymptote</text>
+<text x="80" y="${h/2}" fill="#f9e2af" font-family="sans-serif" font-size="11">y = 1−e⁻ˣ</text>`;
+        }
+      },
+      {
+        id:"custom",label:"Blanc",icon:"✏️",
+        build:(w,h)=>`<rect width="${w}" height="${h}" fill="${DARK_BG}" rx="8"/>`
+      },
+    ];
+
+    // ── SVG Builder composant ───────────────────────────
+    function SvgBuilder({value, onChange}) {
+      const [svgCode, setSvgCode] = useState(value || `<svg viewBox='0 0 ${SVG_W} ${SVG_H}' xmlns='http://www.w3.org/2000/svg'>\n  <rect width='${SVG_W}' height='${SVG_H}' fill='${DARK_BG}' rx='8'/>\n</svg>`);
+      const [showCode, setShowCode] = useState(false);
+      const [activeTool, setActiveTool] = useState("select");
+      const [elements, setElements] = useState([]);
+      const [selIdx, setSelIdx] = useState(null);
+      const [drawState, setDrawState] = useState(null); // for drag drawing
+      const svgRef = useRef();
+      const nextId = useRef(1);
+
+      // Propriétés actives pour l'outil courant
+      const [toolProps, setToolProps] = useState({
+        stroke: "#89b4fa", fill: "none", strokeW: 2,
+        text: "Texte", fontSize: 11, textColor: "#cdd6f4",
+        dashArray: "none",
+      });
+
+      const newId = () => "el"+(nextId.current++);
+
+      // Reconstruire le SVG depuis les éléments + inner template
+      const [innerSvg, setInnerSvg] = useState(`<rect width="${SVG_W}" height="${SVG_H}" fill="${DARK_BG}" rx="8"/>`);
+
+      const buildFullSvg = useCallback((inner, els) => {
+        const elsSvg = els.map(e => {
+          if (e.type==="line") return `<line x1="${Math.round(e.x1)}" y1="${Math.round(e.y1)}" x2="${Math.round(e.x2)}" y2="${Math.round(e.y2)}" stroke="${e.stroke}" stroke-width="${e.sw}" ${e.dash!=="none"?`stroke-dasharray="${e.dash}"`:""}/>`;
+          if (e.type==="rect") return `<rect x="${Math.round(Math.min(e.x1,e.x2))}" y="${Math.round(Math.min(e.y1,e.y2))}" width="${Math.round(Math.abs(e.x2-e.x1))}" height="${Math.round(Math.abs(e.y2-e.y1))}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.sw}" rx="${e.rx||0}"/>`;
+          if (e.type==="circle") { const cx=Math.round((e.x1+e.x2)/2), cy=Math.round((e.y1+e.y2)/2), rx=Math.round(Math.abs(e.x2-e.x1)/2), ry=Math.round(Math.abs(e.y2-e.y1)/2); return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.sw}"/>`; }
+          if (e.type==="arrow") { return `<line x1="${Math.round(e.x1)}" y1="${Math.round(e.y1)}" x2="${Math.round(e.x2)}" y2="${Math.round(e.y2)}" stroke="${e.stroke}" stroke-width="${e.sw}" marker-end="url(#arh)"/>`; }
+          if (e.type==="text") return `<text x="${Math.round(e.x1)}" y="${Math.round(e.y1)}" fill="${e.color}" font-family="sans-serif" font-size="${e.fs}" font-weight="${e.bold?"bold":"normal"}">${e.text}</text>`;
+          if (e.type==="path") return `<path d="${e.d}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.sw}" ${e.dash!=="none"?`stroke-dasharray="${e.dash}"`:""}/>`;
+          return "";
+        }).join("\n");
+        const arrowDef = els.some(e=>e.type==="arrow") ? `<defs><marker id="arh" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="${els.find(e=>e.type==="arrow")?.stroke||"#89b4fa"}"/></marker></defs>` : "";
+        return `<svg viewBox='0 0 ${SVG_W} ${SVG_H}' xmlns='http://www.w3.org/2000/svg' font-family='sans-serif'>\n${inner}\n${arrowDef}\n${elsSvg}\n</svg>`;
+      },[]);
+
+      useEffect(()=>{
+        const full = buildFullSvg(innerSvg, elements);
+        setSvgCode(full);
+        onChange(full);
+      },[innerSvg, elements, buildFullSvg]);
+
+      // Charger un template
+      const loadTemplate = (tpl) => {
+        const inner = tpl.build(SVG_W, SVG_H);
+        setInnerSvg(inner);
+        setElements([]);
+        setSelIdx(null);
+      };
+
+      // Gérer le clic sur le SVG canvas
+      const getSvgCoords = (e) => {
+        const svgEl = svgRef.current;
+        if (!svgEl) return {x:0,y:0};
+        const rect = svgEl.getBoundingClientRect();
+        const scaleX = SVG_W / rect.width;
+        const scaleY = SVG_H / rect.height;
+        return { x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY };
+      };
+
+      const handleSvgMouseDown = (e) => {
+        if (activeTool==="select") {
+          setSelIdx(null); return;
+        }
+        const {x,y} = getSvgCoords(e);
+        if (activeTool==="text") {
+          const text = window.prompt("Texte :", toolProps.text||"Label");
+          if (!text) return;
+          setElements(els=>[...els, {id:newId(),type:"text",x1:x,y1:y,text,color:toolProps.textColor,fs:toolProps.fontSize,bold:false}]);
+          return;
+        }
+        setDrawState({x1:x,y1:y,x2:x,y2:y});
+        e.preventDefault();
+      };
+
+      const handleSvgMouseMove = (e) => {
+        if (!drawState) return;
+        const {x,y} = getSvgCoords(e);
+        setDrawState(s=>({...s,x2:x,y2:y}));
+      };
+
+      const handleSvgMouseUp = () => {
+        if (!drawState) return;
+        const {x1,y1,x2,y2} = drawState;
+        if (Math.abs(x2-x1)<3 && Math.abs(y2-y1)<3) { setDrawState(null); return; }
+        let el = {id:newId(),x1,y1,x2,y2,stroke:toolProps.stroke,sw:toolProps.strokeW,fill:toolProps.fill,dash:toolProps.dashArray};
+        if (activeTool==="line") el.type="line";
+        else if (activeTool==="rect") { el.type="rect"; el.rx=4; }
+        else if (activeTool==="circle") el.type="circle";
+        else if (activeTool==="arrow") el.type="arrow";
+        else if (activeTool==="path") { el.type="path"; el.d=`M${Math.round(x1)},${Math.round(y1)} L${Math.round(x2)},${Math.round(y2)}`; }
+        setElements(els=>[...els, el]);
+        setDrawState(null);
+      };
+
+      const deleteEl = (id) => setElements(els=>els.filter(e=>e.id!==id));
+      const sel = selIdx!=null ? elements[selIdx] : null;
+
+      // Aperçu du dessin en cours
+      const previewEl = drawState ? (() => {
+        const {x1,y1,x2,y2}=drawState;
+        const sx=Math.min(x1,x2),sy=Math.min(y1,y2),sw=Math.abs(x2-x1),sh=Math.abs(y2-y1);
+        if (activeTool==="rect") return <rect x={sx} y={sy} width={sw} height={sh} fill={toolProps.fill==="none"?"rgba(137,180,250,.1)":toolProps.fill} stroke={toolProps.stroke} strokeWidth={toolProps.strokeW} strokeDasharray="4" rx="4" opacity={.8}/>;
+        if (activeTool==="circle") return <ellipse cx={(x1+x2)/2} cy={(y1+y2)/2} rx={sw/2} ry={sh/2} fill={toolProps.fill==="none"?"rgba(137,180,250,.1)":toolProps.fill} stroke={toolProps.stroke} strokeWidth={toolProps.strokeW} opacity={.8}/>;
+        if (activeTool==="line"||activeTool==="arrow"||activeTool==="path")
+          return <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={toolProps.stroke} strokeWidth={toolProps.strokeW} strokeDasharray="4" opacity={.8}/>;
+        return null;
+      })() : null;
+
+      const TOOLS = [
+        {id:"select",icon:"↖",label:"Sélect"},
+        {id:"line",icon:"╱",label:"Ligne"},
+        {id:"arrow",icon:"→",label:"Flèche"},
+        {id:"rect",icon:"▭",label:"Rect"},
+        {id:"circle",icon:"○",label:"Ellipse"},
+        {id:"path",icon:"~",label:"Segment"},
+        {id:"text",icon:"T",label:"Texte"},
+      ];
+
+      return (
+        <div className="svg-builder">
+          {/* Templates */}
+          <div style={{padding:"8px 12px",background:"var(--surface)",borderBottom:"1px solid var(--border)",flexShrink:0}}>
+            <div style={{fontSize:".65rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".1em",color:"var(--primary)",marginBottom:6}}>
+              Partir d'un modèle
+            </div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {SVG_TEMPLATES.map(t=>(
+                <button key={t.id} className="svg-tpl-btn" onClick={()=>loadTemplate(t)}>
+                  <span style={{fontSize:"1.1rem"}}>{t.icon}</span>
+                  <span>{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="svg-builder__layout">
+            {/* Outils gauche */}
+            <div className="svg-tools">
+              <div className="svg-tools-section">
+                <div className="svg-tools-title">Outils</div>
+                <div className="svg-tools-grid">
+                  {TOOLS.map(t=>(
+                    <button key={t.id} className={`svg-tool-btn ${activeTool===t.id?"active":""}`}
+                      onClick={()=>setActiveTool(t.id)}>
+                      <span className="tool-icon">{t.icon}</span>
+                      <span>{t.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="svg-tools-section">
+                <div className="svg-tools-title">Propriétés</div>
+                <div className="svg-prop-row">
+                  <span className="svg-prop-label">Couleur</span>
+                  <input type="color" className="svg-prop-input" value={toolProps.stroke}
+                    onChange={e=>setToolProps(p=>({...p,stroke:e.target.value}))}/>
+                  <span style={{fontSize:".62rem",color:"var(--muted)"}}>trait</span>
+                </div>
+                <div className="svg-prop-row">
+                  <span className="svg-prop-label">Fond</span>
+                  <input type="color" className="svg-prop-input" value={toolProps.fill==="none"?"#000000":toolProps.fill}
+                    onChange={e=>setToolProps(p=>({...p,fill:e.target.value}))}/>
+                  <button onClick={()=>setToolProps(p=>({...p,fill:p.fill==="none"?"#313244":"none"}))}
+                    style={{fontSize:".6rem",padding:"2px 5px",border:"1px solid var(--border)",borderRadius:3,background:"var(--surface-2)",cursor:"pointer",color:"var(--muted)"}}>
+                    {toolProps.fill==="none"?"aucun":"plein"}
+                  </button>
+                </div>
+                <div className="svg-prop-row">
+                  <span className="svg-prop-label">Épaisseur</span>
+                  <input type="range" className="svg-prop-input" min="0.5" max="8" step="0.5"
+                    value={toolProps.strokeW}
+                    onChange={e=>setToolProps(p=>({...p,strokeW:parseFloat(e.target.value)}))}/>
+                  <span style={{fontSize:".65rem",color:"var(--muted)",minWidth:16}}>{toolProps.strokeW}</span>
+                </div>
+                <div className="svg-prop-row">
+                  <span className="svg-prop-label">Tirets</span>
+                  <select className="svg-prop-input" style={{fontSize:".68rem",padding:"2px 4px"}}
+                    value={toolProps.dashArray}
+                    onChange={e=>setToolProps(p=>({...p,dashArray:e.target.value}))}>
+                    <option value="none">Continu</option>
+                    <option value="4,3">Tirets</option>
+                    <option value="2,3">Pointillés</option>
+                    <option value="8,4">Long tirets</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="svg-tools-section">
+                <div className="svg-tools-title">Texte</div>
+                <div className="svg-prop-row">
+                  <span className="svg-prop-label">Couleur</span>
+                  <input type="color" className="svg-prop-input" value={toolProps.textColor}
+                    onChange={e=>setToolProps(p=>({...p,textColor:e.target.value}))}/>
+                </div>
+                <div className="svg-prop-row">
+                  <span className="svg-prop-label">Taille</span>
+                  <input type="range" className="svg-prop-input" min="8" max="24" step="1"
+                    value={toolProps.fontSize}
+                    onChange={e=>setToolProps(p=>({...p,fontSize:parseInt(e.target.value)}))}/>
+                  <span style={{fontSize:".65rem",color:"var(--muted)",minWidth:16}}>{toolProps.fontSize}</span>
+                </div>
+              </div>
+
+              <div className="svg-tools-section">
+                <div className="svg-tools-title">Palette</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                  {PALETTE.map(c=>(
+                    <div key={c} onClick={()=>setToolProps(p=>({...p,stroke:c,textColor:c}))}
+                      style={{width:20,height:20,borderRadius:3,background:c,cursor:"pointer",
+                        border:`2px solid ${toolProps.stroke===c?"white":"transparent"}`,transition:"border-color .1s"}}>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Canvas */}
+            <div className="svg-canvas-wrap">
+              <div className="svg-canvas-toolbar">
+                <span style={{fontSize:".7rem",color:"var(--muted)",fontWeight:600}}>{SVG_W}×{SVG_H}</span>
+                <button className="g-btn g-btn-ghost g-btn-sm"
+                  onClick={()=>setElements([])}>🗑 Effacer dessins</button>
+                <button className="g-btn g-btn-ghost g-btn-sm"
+                  onClick={()=>{if(elements.length>0)setElements(e=>e.slice(0,-1));}}>↩ Annuler</button>
+                <div style={{marginLeft:"auto",fontSize:".68rem",color:"var(--muted)"}}>
+                  {activeTool==="select"?"Clic pour sélectionner":"Cliquer-glisser pour dessiner"}
+                </div>
+              </div>
+
+              <div className="svg-canvas-area">
+                <svg ref={svgRef}
+                  viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+                  width={SVG_W} height={SVG_H}
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{cursor:activeTool==="select"?"default":"crosshair"}}
+                  onMouseDown={handleSvgMouseDown}
+                  onMouseMove={handleSvgMouseMove}
+                  onMouseUp={handleSvgMouseUp}
+                  onMouseLeave={handleSvgMouseUp}
+                  dangerouslySetInnerHTML={{
+                    __html: innerSvg + "\n" + elements.map((e,i)=>{
+                      const sel_s = i===selIdx ? ' style="outline:2px dashed #89b4fa"' : "";
+                      if (e.type==="line") return `<line x1="${Math.round(e.x1)}" y1="${Math.round(e.y1)}" x2="${Math.round(e.x2)}" y2="${Math.round(e.y2)}" stroke="${e.stroke}" stroke-width="${e.sw}" ${e.dash!=="none"?`stroke-dasharray="${e.dash}"`:""}/>`;
+                      if (e.type==="rect") return `<rect x="${Math.round(Math.min(e.x1,e.x2))}" y="${Math.round(Math.min(e.y1,e.y2))}" width="${Math.round(Math.abs(e.x2-e.x1))}" height="${Math.round(Math.abs(e.y2-e.y1))}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.sw}" rx="4"/>`;
+                      if (e.type==="circle") { const cx=Math.round((e.x1+e.x2)/2),cy=Math.round((e.y1+e.y2)/2),rx=Math.round(Math.abs(e.x2-e.x1)/2),ry=Math.round(Math.abs(e.y2-e.y1)/2); return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.sw}"/>`; }
+                      if (e.type==="arrow") return `<line x1="${Math.round(e.x1)}" y1="${Math.round(e.y1)}" x2="${Math.round(e.x2)}" y2="${Math.round(e.y2)}" stroke="${e.stroke}" stroke-width="${e.sw}" marker-end="url(#arh)"/>`;
+                      if (e.type==="path") return `<path d="${e.d}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.sw}"/>`;
+                      if (e.type==="text") return `<text x="${Math.round(e.x1)}" y="${Math.round(e.y1)}" fill="${e.color}" font-family="sans-serif" font-size="${e.fs}">${e.text}</text>`;
+                      return "";
+                    }).join("\n")
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Panneau éléments droite */}
+            <div className="svg-elements">
+              <div style={{padding:"8px 10px",borderBottom:"1px solid var(--border)",fontSize:".65rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".1em",color:"var(--primary)"}}>
+                Éléments ({elements.length})
+              </div>
+              {elements.length===0 && (
+                <div style={{padding:"16px 10px",fontSize:".72rem",color:"var(--muted)",textAlign:"center",lineHeight:1.6}}>
+                  Dessine sur le canvas pour ajouter des éléments
+                </div>
+              )}
+              {elements.map((e,i)=>(
+                <div key={e.id} className={`svg-el-item ${selIdx===i?"sel":""}`}
+                  onClick={()=>setSelIdx(i===selIdx?null:i)}>
+                  <span className="svg-el-icon">
+                    {e.type==="line"?"╱":e.type==="rect"?"▭":e.type==="circle"?"○":e.type==="arrow"?"→":e.type==="text"?"T":e.type==="path"?"~":"?"}
+                  </span>
+                  <span className="svg-el-label">{e.type}{e.text?" : "+e.text.slice(0,10):""}</span>
+                  <div style={{width:8,height:8,borderRadius:"50%",background:e.stroke||e.color,flexShrink:0}}/>
+                  <button className="svg-el-del" onClick={ev=>{ev.stopPropagation();deleteEl(e.id);}}>✕</button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Barre code */}
+          <div className="svg-code-bar">
+            <div className="svg-code-toggle" onClick={()=>setShowCode(v=>!v)}>
+              <span>{showCode?"▼":"▶"}</span>
+              <span>Code SVG</span>
+              <span style={{fontSize:".68rem",marginLeft:"auto",fontWeight:400,color:"var(--light)"}}>
+                {svgCode.length} caractères
+              </span>
+              <button className="g-btn g-btn-ghost g-btn-sm" style={{marginLeft:8,fontSize:".65rem"}}
+                onClick={e=>{e.stopPropagation();navigator.clipboard.writeText(svgCode);}}>
+                📋 Copier
+              </button>
+            </div>
+            {showCode && (
+              <div className="svg-code-area">
+                <textarea rows={5} value={svgCode}
+                  onChange={e=>{
+                    const v=e.target.value; setSvgCode(v); onChange(v);
+                    // Si l'utilisateur colle du SVG valide, on met à jour l'innerSvg
+                    const m=v.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
+                    if(m){setInnerSvg(m[1]);setElements([]);}
+                  }}
+                  spellCheck={false}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ══════════════════════════════════════════════════
+    // MODALS
+    // ══════════════════════════════════════════════════
+    function Modal({title,sub,onClose,children,wide,xl}) {
+      const stop = e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); };
+      return (
+        <div className="g-modal-bg" onClick={onClose} onMouseDown={e=>{if(e.target===e.currentTarget)e.stopPropagation();}}>
+          <div className={`g-modal ${wide?"wide":""} ${xl?"xl":""}`} onClick={stop} onMouseDown={stop}>
+            <div className="g-modal-title">{title}</div>
+            {sub && <div className="g-modal-sub">{sub}</div>}
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    function ModalRename({title,current,onConfirm,onClose}) {
+      const [val,setVal]=useState(current||"");
+      const ref=useRef();
+      useEffect(()=>{setTimeout(()=>ref.current?.select(),60);},[]);
+      return (
+        <Modal title={title} onClose={onClose}>
+          <input ref={ref} className="g-field" value={val}
+            onChange={e=>setVal(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter")onConfirm(val);if(e.key==="Escape")onClose();}}
+            style={{marginBottom:4}}/>
+          <div className="g-modal-footer">
+            <button className="g-btn g-btn-ghost g-btn-sm" onClick={onClose}>Annuler</button>
+            <button className="g-btn g-btn-primary g-btn-sm" onClick={()=>onConfirm(val)}>Confirmer</button>
+          </div>
+        </Modal>
+      );
+    }
+
+    function ModalConfirm({title,msg,onConfirm,onClose}) {
+      return (
+        <Modal title={<><span>🗑️</span>{title}</>} onClose={onClose}>
+          <p style={{fontSize:".82rem",color:"var(--muted)",lineHeight:1.6,marginBottom:4}}>{msg}</p>
+          <div className="g-modal-footer">
+            <button className="g-btn g-btn-ghost g-btn-sm" onClick={onClose}>Annuler</button>
+            <button className="g-btn g-btn-danger g-btn-sm" onClick={onConfirm}>Supprimer</button>
+          </div>
+        </Modal>
+      );
+    }
+
+    const ICONS_LIST=["📚","∫","∂","∑","📐","⚛️","🧬","🔬","📜","🌍","💡","⚡","🎲","📈","𝑓","ℝ","⚗️","🧮","🔭","🗺️","🎓","📖"];
+    function IconPicker({value,onChange}) {
+      return (
+        <div>
+          <div className="g-icon-grid">
+            {ICONS_LIST.map(ic=>(
+              <button key={ic} type="button" className={`g-icon-btn ${value===ic?"selected":""}`}
+                onClick={()=>onChange(ic)}>{ic}</button>
+            ))}
+          </div>
+          <input className="g-field" value={value} onChange={e=>onChange(e.target.value)}
+            placeholder="Ou tape ton propre emoji…" style={{marginTop:4}}/>
+        </div>
+      );
+    }
+
+    function ModalCreateChapter({onConfirm,onClose}) {
+      const [label,setLabel]=useState(""); const [icon,setIcon]=useState("📚");
+      return (
+        <Modal title="➕ Nouveau Chapitre" onClose={onClose}>
+          <div className="g-field-group" style={{marginBottom:14}}>
+            <div className="g-field-label">Nom du chapitre</div>
+            <input className="g-field" value={label} onChange={e=>setLabel(e.target.value)}
+              placeholder="ex : Intégrales, Fonctions, Énergie…"
+              onKeyDown={e=>e.key==="Enter"&&label.trim()&&onConfirm({label:label.trim(),icon})} autoFocus/>
+          </div>
+          <div className="g-field-group" style={{marginBottom:4}}>
+            <div className="g-field-label">Icône</div>
+            <IconPicker value={icon} onChange={setIcon}/>
+          </div>
+          <div className="g-modal-footer">
+            <button className="g-btn g-btn-ghost g-btn-sm" onClick={onClose}>Annuler</button>
+            <button className="g-btn g-btn-primary g-btn-sm" disabled={!label.trim()}
+              onClick={()=>label.trim()&&onConfirm({label:label.trim(),icon})}>
+              Créer le chapitre
+            </button>
+          </div>
+        </Modal>
+      );
+    }
+
+    function ModalCreateNotion({chapterLabel,onConfirm,onClose}) {
+      const [label,setLabel]=useState("");
+      return (
+        <Modal title="➕ Nouvelle Notion"
+          sub={<>dans le chapitre <strong style={{color:"var(--primary)"}}>«{chapterLabel}»</strong></>}
+          onClose={onClose}>
+          <div className="g-field-group" style={{marginBottom:14}}>
+            <div className="g-field-label">Nom de la notion</div>
+            <input className="g-field" value={label} onChange={e=>setLabel(e.target.value)}
+              placeholder="ex : Notion de primitive, Intégrale de Riemann…"
+              onKeyDown={e=>e.key==="Enter"&&label.trim()&&onConfirm(label.trim())} autoFocus/>
+          </div>
+          <div className="g-modal-footer">
+            <button className="g-btn g-btn-ghost g-btn-sm" onClick={onClose}>Annuler</button>
+            <button className="g-btn g-btn-primary g-btn-sm" disabled={!label.trim()}
+              onClick={()=>label.trim()&&onConfirm(label.trim())}>
+              Créer la notion
+            </button>
+          </div>
+        </Modal>
+      );
+    }
+
+    function ModalCreateLevel({onConfirm,onClose}) {
+      const [label,setLabel]=useState(""); const [color,setColor]=useState("#4F46E5");
+      return (
+        <Modal title="➕ Nouveau Niveau Scolaire" onClose={onClose}>
+          <div className="g-field-group" style={{marginBottom:12}}>
+            <div className="g-field-label">Nom</div>
+            <input className="g-field" value={label} onChange={e=>setLabel(e.target.value)}
+              placeholder="ex : Terminale, Première, L1…" autoFocus
+              onKeyDown={e=>e.key==="Enter"&&label.trim()&&onConfirm({label:label.trim(),color})}/>
+          </div>
+          <div className="g-field-row" style={{marginBottom:4}}>
+            <div className="g-field-group">
+              <div className="g-field-label">Couleur</div>
+              <input type="color" className="g-field" value={color} onChange={e=>setColor(e.target.value)} style={{height:36,padding:2,cursor:"pointer"}}/>
+            </div>
+          </div>
+          <div className="g-modal-footer">
+            <button className="g-btn g-btn-ghost g-btn-sm" onClick={onClose}>Annuler</button>
+            <button className="g-btn g-btn-primary g-btn-sm" disabled={!label.trim()}
+              onClick={()=>label.trim()&&onConfirm({label:label.trim(),color})}>
+              Créer le niveau
+            </button>
+          </div>
+        </Modal>
+      );
+    }
+
+    function ModalCreateSubject({levelId,levelLabel,onConfirm,onClose}) {
+      const [label,setLabel]=useState(""); const [icon,setIcon]=useState("📚");
+      return (
+        <Modal title="➕ Nouvelle Matière" sub={<>dans <strong style={{color:"var(--primary)"}}>«{levelLabel}»</strong></>} onClose={onClose}>
+          <div className="g-field-group" style={{marginBottom:14}}>
+            <div className="g-field-label">Nom de la matière</div>
+            <input className="g-field" value={label} onChange={e=>setLabel(e.target.value)}
+              placeholder="ex : Mathématiques, Physique-Chimie…" autoFocus
+              onKeyDown={e=>e.key==="Enter"&&label.trim()&&onConfirm({label:label.trim(),icon})}/>
+          </div>
+          <div className="g-field-group" style={{marginBottom:4}}>
+            <div className="g-field-label">Icône</div>
+            <IconPicker value={icon} onChange={setIcon}/>
+          </div>
+          <div className="g-modal-footer">
+            <button className="g-btn g-btn-ghost g-btn-sm" onClick={onClose}>Annuler</button>
+            <button className="g-btn g-btn-primary g-btn-sm" disabled={!label.trim()}
+              onClick={()=>label.trim()&&onConfirm({label:label.trim(),icon})}>
+              Créer la matière
+            </button>
+          </div>
+        </Modal>
+      );
+    }
+
+    // ══════════════════════════════════════════════════
+    // MODAL GRAPH BUILDER (plein écran)
+    // ══════════════════════════════════════════════════
+    function ModalGraphBuilder({initialSvg, onConfirm, onClose}) {
+      const [svg, setSvg] = useState(initialSvg||"");
+      return (
+        <Modal title="📈 Constructeur de graphique" xl onClose={onClose}
+          sub="Choisis un modèle, dessine par-dessus, puis insère dans le bloc">
+          <div style={{height:"calc(90vh - 140px)",display:"flex",flexDirection:"column",margin:"0 -24px",border:"1px solid var(--border)",borderLeft:"none",borderRight:"none"}}>
+            <SvgBuilder value={initialSvg||""} onChange={setSvg}/>
+          </div>
+          <div className="g-modal-footer">
+            <button className="g-btn g-btn-ghost g-btn-sm" onClick={onClose}>Annuler</button>
+            <button className="g-btn g-btn-primary" onClick={()=>onConfirm(svg)}>
+              ✓ Insérer le graphique
+            </button>
+          </div>
+        </Modal>
+      );
+    }
+
+    // ══════════════════════════════════════════════════
+    // BLOCK EDITOR
+    // ══════════════════════════════════════════════════
+    function BlockEditor({block,idx,total,onChange,onDelete,onUp,onDown}) {
+      const bt=BT[block.type]||BT.definition;
+      const [open,setOpen]=useState(true);
+      const [showGraphBuilder,setShowGraphBuilder]=useState(false);
+      return (
+        <div className="g-block">
+          <div className="g-block-header">
+            <div className="g-block-type-dot" style={{background:bt.color}}/>
+            <span className="g-block-type-label" style={{color:bt.color}}>{bt.icon} {bt.label}</span>
+            <div className="g-block-actions">
+              {idx>0&&<button className="g-block-action-btn" onClick={onUp} title="Monter">▲</button>}
+              {idx<total-1&&<button className="g-block-action-btn" onClick={onDown} title="Descendre">▼</button>}
+              <button className="g-block-action-btn" onClick={()=>setOpen(v=>!v)}>{open?"▲":"▼"}</button>
+              <button className="g-block-action-btn del" onClick={onDelete}>✕</button>
+            </div>
+          </div>
+          {open && (
+            <div className="g-block-body">
+              <div className="g-field-row">
+                <div className="g-field-group">
+                  <div className="g-field-label">Type</div>
+                  <select className="g-field" value={block.type}
+                    onChange={e=>onChange({...block,type:e.target.value})}>
+                    {BLOCK_TYPES.map(bt=><option key={bt.type} value={bt.type}>{bt.icon} {bt.label}</option>)}
+                  </select>
+                </div>
+                <div className="g-field-group">
+                  <div className="g-field-label">Titre</div>
+                  <input className="g-field" value={block.title||""}
+                    placeholder={`${bt.icon} Titre du bloc…`}
+                    onChange={e=>onChange({...block,title:e.target.value})}/>
+                </div>
+              </div>
+              {["formula","warning","technique","definition"].includes(block.type)&&(
+                <div className="g-field-group">
+                  <div className="g-field-label">Formule / Équation</div>
+                  <input className="g-field" value={block.formula||""}
+                    placeholder="ex : F'(x) = f(x)…"
+                    onChange={e=>onChange({...block,formula:e.target.value})}/>
+                </div>
+              )}
+              {block.type!=="graph"&&block.type!=="image"&&(
+                <div className="g-field-group">
+                  <div className="g-field-label">Texte / Explication</div>
+                  <textarea className="g-field" value={block.text||""} rows={3}
+                    placeholder="Explication détaillée…"
+                    onChange={e=>onChange({...block,text:e.target.value})}/>
+                </div>
+              )}
+              {block.type==="graph"&&(
+                <div className="g-field-group">
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+                    <div className="g-field-label">SVG Content</div>
+                    <button className="g-btn g-btn-primary g-btn-sm"
+                      onClick={()=>setShowGraphBuilder(true)}>
+                      📈 Constructeur visuel
+                    </button>
+                  </div>
+                  <textarea className="g-field" value={block.svgContent||""} rows={3}
+                    placeholder={"<svg viewBox='0 0 580 260' xmlns='http://www.w3.org/2000/svg'>…</svg>"}
+                    onChange={e=>onChange({...block,svgContent:e.target.value})}/>
+                  {block.svgContent&&(
+                    <div className="g-svg-preview" dangerouslySetInnerHTML={{__html:block.svgContent}}/>
+                  )}
+                </div>
+              )}
+              {block.type==="image"&&(
+                <div className="g-field-group">
+                  <div className="g-field-label">URL de l'image</div>
+                  <input className="g-field" value={block.src||""}
+                    placeholder="https://…" onChange={e=>onChange({...block,src:e.target.value})}/>
+                  {block.src&&(
+                    <img src={block.src} alt="" style={{maxWidth:"100%",maxHeight:160,marginTop:7,borderRadius:6,objectFit:"contain"}}
+                      onError={e=>{e.target.style.display="none";}}/>
+                  )}
+                </div>
+              )}
+              {["graph","image"].includes(block.type)&&(
+                <div className="g-field-group">
+                  <div className="g-field-label">Légende</div>
+                  <input className="g-field" value={block.caption||""}
+                    placeholder="Légende optionnelle…"
+                    onChange={e=>onChange({...block,caption:e.target.value})}/>
+                </div>
+              )}
+              {block.type==="graph"&&block.type==="graph"&&(
+                <div className="g-field-group">
+                  <div className="g-field-label">Texte descriptif</div>
+                  <textarea className="g-field" value={block.text||""} rows={2}
+                    placeholder="Description du graphique…"
+                    onChange={e=>onChange({...block,text:e.target.value})}/>
+                </div>
+              )}
+            </div>
+          )}
+          {showGraphBuilder&&(
+            <ModalGraphBuilder
+              initialSvg={block.svgContent||""}
+              onConfirm={svg=>{onChange({...block,svgContent:svg});setShowGraphBuilder(false);}}
+              onClose={()=>setShowGraphBuilder(false)}/>
+          )}
+        </div>
+      );
+    }
+
+    // ══════════════════════════════════════════════════
+    // NOTION EDITOR
+    // ══════════════════════════════════════════════════
+    function NotionEditor({notion,chapterId,chapterLabel,onSave,onClose}) {
+      const [n,setN]=useState(()=>({
+        ...notion,
+        lesson: notion.lesson||{formula:"",text:"",example:""},
+        fullBlocks: (notion.fullBlocks||[]).map((b,i)=>({...b,_id:b._id||(genId()+i)})),
+        levels: notion.levels||Array(6).fill([]),
+      }));
+      const [saved,setSaved]=useState(false);
+      const [tab,setTab]=useState("lesson");
+
+      const setLesson=(field,val)=>setN(p=>({...p,lesson:{...p.lesson,[field]:val}}));
+      const updBlocks=blocks=>setN(p=>({...p,fullBlocks:blocks}));
+      const addBlock=type=>{
+        const bt=BT[type];
+        const nb={_id:genId(),type,title:`${bt.icon} ${bt.label}`,text:"",formula:""};
+        setN(p=>({...p,fullBlocks:[...p.fullBlocks,nb]}));
+      };
+      const handleSave=()=>{onSave(n);setSaved(true);setTimeout(()=>setSaved(false),2000);};
+      const handleDl=()=>dl(exportNotionJS(n,chapterId),`${n.id}.js`);
+      const totalQ=n.levels.reduce((s,l)=>s+(Array.isArray(l)?l.length:0),0);
+
+      return (
+        <div className="g-editor">
+          <div className="g-editor-topbar">
+            <div style={{flex:1,minWidth:0}}>
+              <div className="g-editor-name">
+                {notion._isL1&&<span className="g-badge-l1">L1</span>}
+                {notion._readonly&&<span style={{fontSize:".58rem",background:"var(--success-faint)",color:"var(--success)",border:"1px solid #6EE7B7",borderRadius:4,padding:"1px 6px"}}>📦 Chargé</span>}
+                <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.label}</span>
+              </div>
+              <div className="g-editor-meta">id: {n.id} · {n.fullBlocks.length} blocs · {totalQ} questions</div>
+            </div>
+            <div style={{display:"flex",gap:6,flexShrink:0,flexWrap:"wrap"}}>
+              <button className="g-btn g-btn-ghost g-btn-sm" onClick={handleDl}>💾 .js</button>
+              <button className={`g-btn g-btn-sm ${saved?"g-btn-success":"g-btn-primary"}`}
+                onClick={handleSave}>{saved?"✅ Sauvé":"💾 Sauvegarder"}</button>
+              <button className="g-btn g-btn-ghost g-btn-sm"
+                onClick={onClose} style={{color:"var(--danger)",borderColor:"#FCA5A5"}}>✕</button>
+            </div>
+          </div>
+
+          <div className="g-editor-tabs">
+            {[{id:"lesson",label:"📚 Leçon"},{id:"blocks",label:"🧱 Blocs"},{id:"levels",label:"🎯 Niveaux"},{id:"code",label:"💻 Code"}]
+              .map(t=>(
+                <button key={t.id} className={`g-editor-tab ${tab===t.id?"active":""}`}
+                  onClick={()=>setTab(t.id)}>{t.label}</button>
+              ))}
+          </div>
+
+          <div className="g-editor-body">
+
+            {tab==="lesson"&&(
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                <div className="g-field-group">
+                  <div className="g-field-label">Formule / Résumé clé</div>
+                  <input className="g-field" value={n.lesson.formula}
+                    placeholder="ex : F'(x) = f(x) sur I ⟺ F est une primitive de f"
+                    onChange={e=>setLesson("formula",e.target.value)}/>
+                </div>
+                <div className="g-field-group">
+                  <div className="g-field-label">Texte de la leçon (3-4 phrases)</div>
+                  <textarea className="g-field" value={n.lesson.text} rows={6}
+                    placeholder="Définition + mécanisme/propriétés + importance dans le chapitre…"
+                    onChange={e=>setLesson("text",e.target.value)}/>
+                </div>
+                <div className="g-field-group">
+                  <div className="g-field-label">Exemple illustratif</div>
+                  <textarea className="g-field" value={n.lesson.example} rows={3}
+                    placeholder="Un exemple concret avec résultat…"
+                    onChange={e=>setLesson("example",e.target.value)}/>
+                </div>
+              </div>
+            )}
+
+            {tab==="blocks"&&(
+              <div>
+                <div className="g-block-adder">
+                  <div className="g-block-adder-title">Ajouter un bloc</div>
+                  <div className="g-block-chips">
+                    {BLOCK_TYPES.map(bt=>(
+                      <button key={bt.type} className="g-block-chip-btn"
+                        style={{borderColor:bt.color+"55",color:bt.color,background:bt.color+"12"}}
+                        onClick={()=>addBlock(bt.type)}>
+                        {bt.icon} {bt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {n.fullBlocks.length===0&&(
+                  <div className="g-empty">
+                    <div className="g-empty__icon">🧱</div>
+                    <div className="g-empty__text">Aucun bloc — ajoute des blocs ci-dessus</div>
+                  </div>
+                )}
+                {n.fullBlocks.map((block,idx)=>(
+                  <BlockEditor key={block._id||idx} block={block} idx={idx} total={n.fullBlocks.length}
+                    onChange={b=>{const bl=[...n.fullBlocks];bl[idx]=b;updBlocks(bl);}}
+                    onDelete={()=>updBlocks(n.fullBlocks.filter((_,i)=>i!==idx))}
+                    onUp={()=>{if(idx<=0)return;const bl=[...n.fullBlocks];[bl[idx-1],bl[idx]]=[bl[idx],bl[idx-1]];updBlocks(bl);}}
+                    onDown={()=>{if(idx>=n.fullBlocks.length-1)return;const bl=[...n.fullBlocks];[bl[idx],bl[idx+1]]=[bl[idx+1],bl[idx]];updBlocks(bl);}}
+                  />
+                ))}
+              </div>
+            )}
+
+            {tab==="levels"&&(
+              <div>
+                <p style={{fontSize:".72rem",color:"var(--muted)",marginBottom:14,lineHeight:1.65}}>
+                  Aperçu des 6 niveaux de questions. Les exercices se gèrent directement dans les fichiers JS.
+                </p>
+                {n.levels.map((lvl,li)=>(
+                  <div key={li} className="g-level-row" style={{flexDirection:"column",alignItems:"stretch",gap:0,padding:0,overflow:"hidden",marginBottom:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7,padding:"6px 12px",background:"var(--surface-2)"}}>
+                      <span style={{fontSize:".68rem",fontWeight:900,color:"var(--primary)",background:"var(--primary-faint)",borderRadius:4,padding:"2px 7px"}}>N{li+1}</span>
+                      <span style={{fontSize:".72rem",color:"var(--muted)"}}>{Array.isArray(lvl)?lvl.length:0} questions</span>
+                      <span style={{fontSize:".62rem",marginLeft:"auto",color:li<3?"var(--warning)":"var(--primary-light)",fontWeight:700}}>{li<3?"Fondamental":"Avancé"}</span>
+                    </div>
+                    {Array.isArray(lvl)&&lvl.slice(0,2).map((q,qi)=>(
+                      <div key={qi} className="g-level-q">
+                        <span className="g-level-q__type">[{q.type}]</span>
+                        {(q.question||"").slice(0,90)}{(q.question||"").length>90?"…":""}
+                      </div>
+                    ))}
+                    {Array.isArray(lvl)&&lvl.length>2&&(
+                      <div style={{padding:"3px 12px",fontSize:".68rem",color:"var(--light)"}}>+{lvl.length-2} autres…</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab==="code"&&(
+              <div>
+                <div style={{display:"flex",gap:7,marginBottom:10}}>
+                  <button className="g-btn g-btn-ghost g-btn-sm"
+                    onClick={()=>navigator.clipboard.writeText(exportNotionJS(n,chapterId))}>
+                    📋 Copier le code
+                  </button>
+                  <button className="g-btn g-btn-ghost g-btn-sm" onClick={handleDl}>
+                    💾 Télécharger .js
+                  </button>
+                </div>
+                <pre className="g-code-block"><code>{exportNotionJS(n,chapterId)}</code></pre>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ══════════════════════════════════════════════════
+    // NOTION CARD
+    // ══════════════════════════════════════════════════
+    function NotionCard({notion,index,onEdit,onCtx}) {
+      const blocks=notion.fullBlocks||[];
+      const byType=blocks.reduce((a,b)=>{a[b.type]=(a[b.type]||0)+1;return a;},{});
+      const totalQ=notion.levels.reduce((s,l)=>s+(Array.isArray(l)?l.length:0),0);
+      const isComplete=notion.lesson?.text&&blocks.length>0;
+      const statusColor=notion._isL1?"var(--pink)":isComplete?"var(--success)":blocks.length>0?"var(--warning)":"var(--light)";
+      return (
+        <div className={`g-notion-card ${notion._isL1?"l1":""}`} onContextMenu={onCtx} onClick={onEdit}>
+          <div className="g-notion-card__header">
+            <div className="g-notion-card__num">{index+1}</div>
+            <div className="g-notion-card__name">
+              {notion.label}
+              {notion._isL1&&<span className="g-badge-l1" style={{marginLeft:5}}>L1</span>}
+              {notion._new&&<span className="g-badge-new" style={{marginLeft:5}}>NEW</span>}
+            </div>
+            <div className="g-notion-card__status" style={{background:statusColor}}/>
+          </div>
+          {notion.lesson?.text&&(
+            <div className="g-notion-card__text">{notion.lesson.text}</div>
+          )}
+          <div className="g-notion-card__blocks">
+            {blocks.length===0
+              ?<span style={{fontSize:".65rem",color:"var(--light)"}}>Aucun bloc</span>
+              :Object.entries(byType).map(([type,count])=>{
+                const bt=BT[type];
+                return bt?<span key={type} className="g-notion-card__block-chip"
+                  style={{background:`${bt.color}18`,border:`1px solid ${bt.color}35`,color:bt.color}}>
+                  {bt.icon} {count}</span>:null;
+              })
+            }
+            {totalQ>0&&<span className="g-notion-card__qcount">{totalQ}q</span>}
+          </div>
+        </div>
+      );
+    }
+
+    // ══════════════════════════════════════════════════
+    // CHAPTER VIEW
+    // ══════════════════════════════════════════════════
+    function ChapterView({merged,levelId,subjectId,chapterId,onCreateNotion,onEditNotion,onNotionCtx,onDownload}) {
+      const ch=merged?.[levelId]?.subjects[subjectId]?.chapters.find(c=>c.id===chapterId);
+      if(!ch) return null;
+      const allN=[...(ch.notions||[]),...(ch.l1Notions||[])];
+      const complete=allN.filter(n=>n.fullBlocks?.length>0&&n.lesson?.text).length;
+      const blocks=allN.reduce((s,n)=>s+(n.fullBlocks||[]).length,0);
+      const qs=allN.reduce((s,n)=>s+n.levels.reduce((a,l)=>a+(Array.isArray(l)?l.length:0),0),0);
+      const pct=allN.length>0?Math.round(complete/allN.length*100):0;
+      return (
+        <div className="g-chapter-view">
+          <div className="g-chapter-header">
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div className="g-chapter-icon">{ch.icon||"📚"}</div>
+              <div>
+                <div className="g-chapter-title">{ch.label}</div>
+                {ch.description&&<div className="g-chapter-desc">{ch.description}</div>}
+                <div className="g-chapter-meta">
+                  <span style={{color:"var(--primary)"}}>{allN.length} notions</span>
+                  <span style={{color:"var(--success)"}}>{complete} complètes</span>
+                  <span style={{color:"var(--warning)"}}>{blocks} blocs</span>
+                  <span style={{color:"var(--muted)"}}>{qs} questions</span>
+                </div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:7}}>
+              <button className="g-btn g-btn-ghost g-btn-sm" onClick={onDownload}>💾 Exporter .js</button>
+              <button className="g-btn g-btn-primary g-btn-sm" onClick={onCreateNotion}>➕ Nouvelle notion</button>
+            </div>
+          </div>
+          <div style={{marginBottom:4,display:"flex",justifyContent:"space-between",fontSize:".72rem",color:"var(--muted)"}}>
+            <span>Progression</span><span style={{fontWeight:700,color:"var(--primary)"}}>{pct}%</span>
+          </div>
+          <div className="g-progress-bar" style={{marginBottom:22}}>
+            <div className="g-progress-fill" style={{width:`${pct}%`}}/>
+          </div>
+          {allN.length===0?(
+            <div className="g-empty">
+              <div className="g-empty__icon">🌱</div>
+              <div className="g-empty__text">Aucune notion dans ce chapitre</div>
+              <button className="g-btn g-btn-primary g-btn-sm" onClick={onCreateNotion}>➕ Créer une notion</button>
+            </div>
+          ):(
+            <div className="g-notions-grid">
+              {allN.map((n,i)=>(
+                <NotionCard key={n.id} notion={n} index={i}
+                  onEdit={()=>onEditNotion(n)}
+                  onCtx={e=>onNotionCtx(e,n.id,!!n._new)}/>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ══════════════════════════════════════════════════
+    // SIDEBAR TREE
+    // ══════════════════════════════════════════════════
+    function SidebarTree({merged,selected,onSelect,onEdit,ctxMenu,panelWidth,setModal,localEdits,newNotions,onCreateLevel,onCreateSubject,onCreateChapter,onCreateNotion}) {
+      return (
+        <div className="g-sidebar" style={{width:panelWidth}}>
+          {Object.values(merged).map(lvl=>(
+            <div key={lvl.id} className="g-tree-level">
+              <div className="g-tree-level-header">
+                <span>{lvl.label}</span>
+                <button title="Ajouter une matière" onClick={()=>onCreateSubject(lvl.id,lvl.label)}>＋</button>
+              </div>
+              {Object.values(lvl.subjects||{}).map(subj=>(
+                <div key={subj.id}>
+                  <div className="g-tree-subject-header">
+                    <span>{subj.icon}</span>
+                    <span style={{flex:1}}>{subj.label}</span>
+                    <button className="g-add-btn" title="Ajouter un chapitre"
+                      onClick={()=>onCreateChapter(lvl.id,subj.id)}>＋</button>
+                  </div>
+                  {(subj.chapters||[]).map(ch=>{
+                    const allN=[...(ch.notions||[]),...(ch.l1Notions||[])];
+                    const isSelCh=selected?.type==="chapter"&&selected.chapterId===ch.id;
+                    return (
+                      <div key={ch.id}>
+                        <div className={`g-tree-chapter ${isSelCh?"active":""}`}
+                          onClick={()=>onSelect({type:"chapter",levelId:lvl.id,subjectId:subj.id,chapterId:ch.id})}
+                          onContextMenu={e=>ctxMenu.open(e,[
+                            {icon:"✏️",label:"Renommer",action:()=>setModal({type:"rename-chapter",levelId:lvl.id,subjectId:subj.id,chapterId:ch.id,current:ch.label})},
+                            {icon:"💾",label:"Exporter .js",action:()=>{/* handled in parent */}},
+                            "sep",
+                            {icon:"🗑️",label:"Supprimer",danger:true,action:()=>setModal({type:"delete-chapter",levelId:lvl.id,subjectId:subj.id,chapterId:ch.id,label:ch.label})},
+                          ])}>
+                          <span className="g-tree-chapter__icon">{ch.icon}</span>
+                          <span className="g-tree-chapter__label">{ch.label}</span>
+                          <span className="g-tree-chapter__count">{allN.length}</span>
+                          <button className="g-tree-chapter__add" title="Ajouter une notion"
+                            onClick={e=>{e.stopPropagation();onCreateNotion(lvl.id,subj.id,ch.id,ch.label);}}>＋</button>
+                        </div>
+                        {isSelCh&&allN.map((n,ni)=>{
+                          const isSel=selected?.notionId===n.id;
+                          return (
+                            <div key={n.id}
+                              className={`g-tree-notion ${isSel?"active":""}`}
+                              onClick={()=>{onSelect({type:"notion",levelId:lvl.id,subjectId:subj.id,chapterId:ch.id,notionId:n.id});onEdit(n,lvl.id,subj.id,ch.id);}}>
+                              <div className="g-tree-notion__dot" style={{background:n._isL1?"var(--pink)":n._new?"var(--success)":"var(--primary-light)"}}/>
+                              <span className="g-tree-notion__label">{n.label}</span>
+                              {n._isL1&&<span className="g-badge-l1">L1</span>}
+                              {n._new&&<span className="g-badge-new">NEW</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          ))}
+          <div style={{padding:"10px 12px",borderTop:"1px solid var(--border)",marginTop:"auto"}}>
+            <button className="g-btn g-btn-ghost g-btn-sm" style={{width:"100%"}}
+              onClick={onCreateLevel}>➕ Nouveau niveau scolaire</button>
+          </div>
+        </div>
+      );
+    }
+
+    // ══════════════════════════════════════════════════
+    // WELCOME PANEL
+    // ══════════════════════════════════════════════════
+    function WelcomePanel({stats}) {
+      return (
+        <div className="g-welcome">
+          <div className="g-welcome-logo">∑</div>
+          <div className="g-welcome-title">Gestionnaire de Projet</div>
+          <div className="g-welcome-sub">
+            {stats.chapters} chapitres · {stats.notions} notions chargés — sélectionne un chapitre pour commencer
+          </div>
+          <div className="g-stats-row">
+            {[
+              {label:"Chapitres",val:stats.chapters,icon:"📚",color:"var(--primary)"},
+              {label:"Notions",  val:stats.notions,  icon:"🧠",color:"var(--primary-light)"},
+              {label:"Blocs",    val:stats.blocks,   icon:"🧱",color:"var(--success)"},
+            ].map(s=>(
+              <div key={s.label} className="g-stat-card">
+                <div className="g-stat-card__icon">{s.icon}</div>
+                <div className="g-stat-card__val" style={{color:s.color}}>{s.val}</div>
+                <div className="g-stat-card__lbl">{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <div className="g-tips">
+            {[
+              {icon:"📂",t:"Connecte ton dossier",d:"Clique sur «📂 Choisir le dossier» dans la bannière pour synchroniser les fichiers .js en temps réel."},
+              {icon:"➕",t:"Crée ta structure",d:"Niveau → Matière → Chapitre → Notion. Chaque notion génère un fichier .js importable dans MathoDuo."},
+              {icon:"📈",t:"Utilise le constructeur de graphiques",d:"Dans un bloc Graphe SVG, clique «📈 Constructeur visuel» pour dessiner des courbes, barres, et schémas interactifs."},
+              {icon:"💾",t:"Exporte ton travail",d:"Bouton «📦 Exporter» en haut pour créer un ZIP ou écrire directement dans ton dossier."},
+            ].map((t,i)=>(
+              <div key={i} className="g-tip">
+                <span className="g-tip__icon">{t.icon}</span>
+                <div><div className="g-tip__title">{t.t}</div><div className="g-tip__desc">{t.d}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ══════════════════════════════════════════════════
+    // APP PRINCIPAL
+    // ══════════════════════════════════════════════════
+    function App() {
+      const [structure,   setStructure]   = useState({});
+      const [localEdits,  setLocalEdits]  = useState({});
+      const [newChapters, setNewChapters] = useState({});
+      const [newNotions,  setNewNotions]  = useState({});
+      const [newLevels,   setNewLevels]   = useState({});
+      const [newSubjects, setNewSubjects] = useState({});
+      const [selected,    setSelected]    = useState(null);
+      const [editingNotion,setEditingNotion]=useState(null);
+      const [modal,       setModal]       = useState(null);
+      const [toast,       setToast]       = useState("");
+      const [panelWidth,  setPanelWidth]  = useState(260);
+      const [splDrag,     setSplDrag]     = useState(false);
+      const [exportProg,  setExportProg]  = useState(null);
+      const [folderHandle,setFolderHandle]= useState(null);
+      const [folderName,  setFolderName]  = useState("");
+      const [fsStatus,    setFsStatus]    = useState("idle");
+      const fsStatusTimer = React.useRef(null);
+      const mergedRef     = React.useRef({});
+      const isSyncingRef  = React.useRef(false);
+      const folderHandleRef = React.useRef(null);
+      const ctxMenu = useCtxMenu();
+
+      const showToast = msg => { setToast(msg); setTimeout(()=>setToast(""),2400); };
+      const setFsOk  = () => { setFsStatus("saved");  clearTimeout(fsStatusTimer.current); fsStatusTimer.current=setTimeout(()=>setFsStatus("idle"),2000); };
+      const setFsErr = () => { setFsStatus("error");  clearTimeout(fsStatusTimer.current); fsStatusTimer.current=setTimeout(()=>setFsStatus("idle"),4000); };
+      const setFsSaving = () => setFsStatus("saving");
+      const sl = s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+
+      const getChapterDir = async (fh,levelId,subjectId,chapterId,labels={}) => {
+        const lDir=await fh.getDirectoryHandle(sl(labels.levelLabel||levelId),{create:true});
+        const sDir=await lDir.getDirectoryHandle(sl(labels.subjLabel||subjectId),{create:true});
+        return await sDir.getDirectoryHandle(sl(labels.chLabel||chapterId),{create:true});
+      };
+      const fsWriteFile = async (dirHandle,filename,text) => {
+        const fh=await dirHandle.getFileHandle(filename,{create:true});
+        const w=await fh.createWritable(); await w.write(text); await w.close();
+      };
+
+      const fsSaveNotion = async (levelId,subjectId,chapterId,_notion,mergedSnapshot) => {
+        const fh=folderHandleRef.current; if(!fh) return;
+        try {
+          setFsSaving();
+          const snap=mergedSnapshot||mergedRef.current;
+          const lvl=snap?.[levelId]; const subj=lvl?.subjects?.[subjectId];
+          const ch=subj?.chapters?.find(c=>c.id===chapterId);
+          if(!ch){setFsOk();return;}
+          const labels={levelLabel:lvl?.label,subjLabel:subj?.label,chLabel:ch?.label};
+          const cDir=await getChapterDir(fh,levelId,subjectId,chapterId,labels);
+          await fsWriteFile(cDir,"index.js",exportChapterJS(ch,subjectId,levelId));
+          setFsOk();
+        } catch(e){console.error(e);setFsErr();}
+      };
+
+      const fsDeleteNotion=fsSaveNotion; // same: réécrit index.js
+
+      const merged = useMemo(()=>{
+        const base = subjectsToProject(structure);
+        const result = JSON.parse(JSON.stringify(base));
+        Object.entries(newLevels).forEach(([lid,lvl])=>{ if(!result[lid]) result[lid]={...lvl,subjects:{}}; });
+        Object.entries(newSubjects).forEach(([key,subj])=>{
+          const [lid,sid]=key.split("|");
+          if(result[lid]&&!result[lid].subjects[sid]) result[lid].subjects[sid]={...subj,chapters:[]};
+        });
+        Object.entries(newChapters).forEach(([key,ch])=>{
+          const [lid,sid]=key.split("|");
+          if(result[lid]?.subjects[sid]) result[lid].subjects[sid].chapters.push({...ch,notions:[],l1Notions:[]});
+        });
+        Object.entries(newNotions).forEach(([key,notion])=>{
+          const [lid,sid,cid]=key.split("|");
+          const ch=result[lid]?.subjects[sid]?.chapters.find(c=>c.id===cid);
+          if(ch&&!ch.notions.find(n=>n.id===notion.id)) ch.notions.push(notion);
+        });
+        Object.entries(localEdits).forEach(([key,edited])=>{
+          const [lid,sid,cid,nid]=key.split("|");
+          const ch=result[lid]?.subjects[sid]?.chapters.find(c=>c.id===cid); if(!ch) return;
+          const arr=[...(ch.notions||[]),...(ch.l1Notions||[])];
+          const tgt=arr.find(n=>n.id===nid); if(tgt) Object.assign(tgt,edited);
+        });
+        return result;
+      },[structure,newLevels,newSubjects,newChapters,newNotions,localEdits]);
+
+      useEffect(()=>{ mergedRef.current=merged; },[merged]);
+
+      const stats = useMemo(()=>{
+        let chapters=0,notions=0,blocks=0;
+        Object.values(merged).forEach(lvl=>{
+          Object.values(lvl.subjects||{}).forEach(subj=>{
+            (subj.chapters||[]).forEach(ch=>{
+              chapters++;
+              const all=[...(ch.notions||[]),...(ch.l1Notions||[])];
+              notions+=all.length;
+              all.forEach(n=>{blocks+=(n.fullBlocks||[]).length;});
+            });
+          });
+        });
+        return {chapters,notions,blocks};
+      },[merged]);
+
+      const isEmpty = stats.chapters===0;
+
+      // Recevoir les SUBJECTS depuis le parent (iframe)
+      const isFromParent = window!==window.top;
+      useEffect(()=>{
+        const h=e=>{
+          if(e.data?.type==="SUBJECTS_DATA"&&e.data.subjects) setStructure(e.data.subjects);
+        };
+        window.addEventListener("message",h);
+        window.parent?.postMessage({type:"REQUEST_SUBJECTS"},"*");
+        return ()=>window.removeEventListener("message",h);
+      },[]);
+
+      // File System Access
+      const requestFolderAccess = async () => {
+        if(!window.showDirectoryPicker){showToast("File System Access non supporté — utilisez Chrome/Edge");return;}
+        try {
+          const fh=await window.showDirectoryPicker({mode:"readwrite",startIn:"documents"});
+          setFolderHandle(fh); folderHandleRef.current=fh; setFolderName(fh.name);
+          showToast("📂 Dossier connecté : "+fh.name);
+        } catch(e){if(e.name!=="AbortError")showToast("❌ "+e.message);}
+      };
+
+      // CRUD
+      const createLevel=(data)=>{
+        const id=slugify(data.label)||("level_"+genId());
+        setNewLevels(p=>({...p,[id]:{id,label:data.label,color:data.color||"#4F46E5",subjects:{}}}));
+        showToast("Niveau «"+data.label+"» créé"); setModal(null);
+      };
+      const createSubject=(lid,data)=>{
+        const id=slugify(data.label)||("subj_"+genId());
+        const key=lid+"|"+id;
+        setNewSubjects(p=>({...p,[key]:{id,label:data.label,icon:data.icon||"📚",chapters:[]}}));
+        showToast("Matière «"+data.label+"» créée"); setModal(null);
+      };
+      const createChapter=(lid,sid,data)=>{
+        const id=slugify(data.label)||("ch_"+genId());
+        const key=lid+"|"+sid+"|"+id;
+        setNewChapters(p=>({...p,[lid+"|"+sid]:{...p[lid+"|"+sid],
+          [id]:{id,label:data.label,icon:data.icon||"📚",description:"",xpMax:200,notions:[],l1Notions:[]}
+        }}));
+        // Plus simple : stocker par ch id
+        setNewChapters(p=>{const n={...p};const k=lid+"|"+sid;if(!n[k])n[k]={};n[k][id]={id,label:data.label,icon:data.icon||"📚",description:"",xpMax:200,notions:[],l1Notions:[]};return n;});
+        showToast("Chapitre «"+data.label+"» créé"); setModal(null);
+      };
+      const createNotion=(lid,sid,cid,label)=>{
+        const id=slugify(label)||("notion_"+genId());
+        const notion={id,label,icon:"📐",_new:true,lesson:{formula:"",text:"",example:""},
+          fullBlocks:[],levels:Array(6).fill([])};
+        const key=lid+"|"+sid+"|"+cid+"|"+id;
+        setNewNotions(p=>({...p,[lid+"|"+sid+"|"+cid+"|"+id]:notion}));
+        showToast("Notion «"+label+"» créée"); setModal(null);
+        // Ouvrir l'éditeur
+        setTimeout(()=>setEditingNotion({notion,levelId:lid,subjectId:sid,chapterId:cid}),80);
+      };
+      const saveNotionEdit=(lid,sid,cid,n)=>{
+        const key=lid+"|"+sid+"|"+cid+"|"+n.id;
+        setLocalEdits(p=>({...p,[key]:{...n}}));
+        // Synchro FS
+        const snap={...mergedRef.current};
+        fsSaveNotion(lid,sid,cid,n,snap);
+        showToast("Notion «"+n.label+"» sauvegardée");
+      };
+      const renameChapter=(lid,sid,cid,newLabel)=>{
+        setLocalEdits(p=>({...p,[lid+"|"+sid+"|"+cid+"_ch"]:{label:newLabel}}));
+        setModal(null); showToast("Renommé : "+newLabel);
+      };
+      const renameNotion=(lid,sid,cid,nid,newLabel)=>{
+        const key=lid+"|"+sid+"|"+cid+"|"+nid;
+        setLocalEdits(p=>({...p,[key]:{...(p[key]||{}),label:newLabel}}));
+        setModal(null); showToast("Renommé : "+newLabel);
+      };
+      const deleteNotion=(lid,sid,cid,nid)=>{
+        setNewNotions(p=>{const n={...p};delete n[lid+"|"+sid+"|"+cid+"|"+nid];return n;});
+        setLocalEdits(p=>{const n={...p};delete n[lid+"|"+sid+"|"+cid+"|"+nid];return n;});
+        fsDeleteNotion(lid,sid,cid,nid);
+        if(editingNotion?.notion?.id===nid) setEditingNotion(null);
+        setModal(null); showToast("Notion supprimée");
+      };
+      const deleteChapter=(lid,sid,cid)=>{
+        setNewChapters(p=>{const n={...p};if(n[lid+"|"+sid])delete n[lid+"|"+sid][cid];return n;});
+        setModal(null); showToast("Chapitre supprimé");
+      };
+      const dlChapter=(lid,sid,cid)=>{
+        const ch=merged?.[lid]?.subjects[sid]?.chapters.find(c=>c.id===cid);
+        if(ch){dl(exportChapterJS(ch,sid,lid),ch.id+"-index.js");showToast("Exporté : "+ch.id+"-index.js");}
+      };
+      const openEdit=(notion,lid,sid,cid)=>{
+        setEditingNotion({notion,levelId:lid,subjectId:sid,chapterId:cid});
+        setSelected(s=>({...s,type:"chapter",notionId:notion.id}));
+      };
+      const selectChapter=(sel)=>{
+        setSelected(sel);
+        if(sel.type==="chapter") setEditingNotion(null);
+      };
+
+      return (
+        <div className="g-app">
+          {/* Topbar */}
+          <div className="g-topbar">
+            <div className="g-topbar__brand">Math<em>Duo</em></div>
+            <div className="g-topbar__sep"/>
+            <div className="g-topbar__title">Gestionnaire de projet</div>
+            <div className="g-topbar__actions">
+              <span className="g-topbar__stat">📚 {stats.chapters} chapitres</span>
+              <span className="g-topbar__stat">🧠 {stats.notions} notions</span>
+              {exportProg ? (
+                <span style={{fontSize:".72rem",color:"var(--primary)",fontWeight:600}}>
+                  ⏳ {exportProg.done}/{exportProg.total} — {exportProg.last}
+                </span>
+              ) : (
+                <button className="g-btn g-btn-ghost g-btn-sm"
+                  onClick={()=>exportFullStructure(merged,
+                    (done,total,last)=>setExportProg({done,total,last}),
+                    (done)=>{setExportProg(null);showToast(done+" fichiers exportés");},
+                    (err)=>{setExportProg(null);showToast("❌ "+err);})}>
+                  📦 Exporter
+                </button>
+              )}
+              <button className="g-btn g-btn-primary g-btn-sm"
+                onClick={()=>setModal({type:"create-level"})}>
+                ➕ Niveau
+              </button>
+            </div>
+          </div>
+
+          {/* Folder banner */}
+          {!folderHandle ? (
+            window.showDirectoryPicker ? (
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"0 18px",height:32,
+                background:"var(--warning-faint)",borderBottom:"1px solid #FCD34D",fontSize:".72rem"}}>
+                <span>📂</span>
+                <span style={{color:var:"var(--text)"}}>Connecte ton dossier de projet pour synchroniser les fichiers en temps réel</span>
+                <button className="g-folder-banner__btn" onClick={requestFolderAccess}>📂 Choisir le dossier</button>
+              </div>
+            ) : null
+          ) : (
+            <div className="g-folder-banner">
+              <span className="g-folder-banner__icon">📂</span>
+              <span className="g-folder-banner__path">…/{folderName}</span>
+              <span className={`g-folder-banner__status${fsStatus==="saving"?" saving":fsStatus==="error"?" error":""}`}>
+                {fsStatus==="saving"?"⏳ Écriture…":fsStatus==="error"?"❌ Erreur":fsStatus==="saved"?"✅ Synchronisé":"🟢 Connecté"}
+              </span>
+              <button className="g-folder-banner__btn" onClick={requestFolderAccess}>↺ Changer</button>
+            </div>
+          )}
+
+          <div className="g-body">
+            <SidebarTree
+              merged={merged} selected={selected}
+              onSelect={selectChapter} onEdit={openEdit}
+              ctxMenu={ctxMenu} panelWidth={panelWidth}
+              setModal={setModal} localEdits={localEdits} newNotions={newNotions}
+              onCreateLevel={()=>setModal({type:"create-level"})}
+              onCreateSubject={(lid,lLabel)=>setModal({type:"create-subject",levelId:lid,levelLabel:lLabel})}
+              onCreateChapter={(lid,sid)=>setModal({type:"create-chapter",levelId:lid,subjectId:sid})}
+              onCreateNotion={(lid,sid,cid,clabel)=>setModal({type:"create-notion",levelId:lid,subjectId:sid,chapterId:cid,chapterLabel:clabel})}
+            />
+
+            <div className={`g-splitter ${splDrag?"dragging":""}`}
+              onMouseDown={e=>{
+                setSplDrag(true);
+                const startX=e.clientX,startW=panelWidth;
+                const onMove=ev=>setPanelWidth(Math.max(180,Math.min(480,startW+ev.clientX-startX)));
+                const onUp=()=>{setSplDrag(false);window.removeEventListener("mousemove",onMove);window.removeEventListener("mouseup",onUp);};
+                window.addEventListener("mousemove",onMove);
+                window.addEventListener("mouseup",onUp);
+              }}/>
+
+            <div className="g-main">
+              {editingNotion ? (
+                <NotionEditor
+                  key={editingNotion.notion.id+"|"+editingNotion.chapterId}
+                  notion={editingNotion.notion}
+                  chapterId={editingNotion.chapterId}
+                  chapterLabel={merged?.[editingNotion.levelId]?.subjects?.[editingNotion.subjectId]?.chapters?.find(c=>c.id===editingNotion.chapterId)?.label||""}
+                  onSave={n=>saveNotionEdit(editingNotion.levelId,editingNotion.subjectId,editingNotion.chapterId,n)}
+                  onClose={()=>{setEditingNotion(null);if(selected?.chapterId)setSelected({...selected,type:"chapter",notionId:undefined});}}
+                />
+              ) : selected?.type==="chapter" ? (
+                <ChapterView
+                  merged={merged}
+                  levelId={selected.levelId} subjectId={selected.subjectId} chapterId={selected.chapterId}
+                  onCreateNotion={()=>setModal({type:"create-notion",levelId:selected.levelId,subjectId:selected.subjectId,chapterId:selected.chapterId,chapterLabel:merged?.[selected.levelId]?.subjects[selected.subjectId]?.chapters.find(c=>c.id===selected.chapterId)?.label||""})}
+                  onEditNotion={n=>openEdit(n,selected.levelId,selected.subjectId,selected.chapterId)}
+                  onNotionCtx={(e,notionId,isNew)=>{
+                    const ch=merged?.[selected.levelId]?.subjects[selected.subjectId]?.chapters.find(c=>c.id===selected.chapterId);
+                    const notion=[...(ch?.notions||[]),...(ch?.l1Notions||[])].find(n=>n.id===notionId);
+                    if(!notion) return;
+                    ctxMenu.open(e,[
+                      {icon:"✏️",label:"Éditer",action:()=>openEdit(notion,selected.levelId,selected.subjectId,selected.chapterId)},
+                      ...(isNew?[{icon:"📝",label:"Renommer",action:()=>setModal({type:"rename-notion",levelId:selected.levelId,subjectId:selected.subjectId,chapterId:selected.chapterId,notionId,current:notion.label})}]:[]),
+                      "sep",
+                      {icon:"💾",label:"Exporter .js",action:()=>{dl(exportNotionJS(notion,selected.chapterId),notionId+".js");showToast(notionId+".js téléchargé");}},
+                      ...(isNew?["sep",{icon:"🗑️",label:"Supprimer",danger:true,action:()=>setModal({type:"delete-notion",levelId:selected.levelId,subjectId:selected.subjectId,chapterId:selected.chapterId,notionId,label:notion.label})}]:[]),
+                    ]);
+                  }}
+                  onDownload={()=>dlChapter(selected.levelId,selected.subjectId,selected.chapterId)}
+                />
+              ) : isEmpty ? (
+                <div className="g-welcome">
+                  <div className="g-welcome-logo">∑</div>
+                  <div className="g-welcome-title">Gestionnaire MathoDuo</div>
+                  <div className="g-welcome-sub">
+                    {isFromParent?"Données reçues — crée un premier niveau scolaire pour commencer.":"Aucune donnée. Crée un niveau scolaire ou recharge depuis MathoDuo."}
+                  </div>
+                  <div style={{display:"flex",gap:9,flexWrap:"wrap",justifyContent:"center",marginBottom:28}}>
+                    <button className="g-btn g-btn-primary g-btn-sm" onClick={()=>setModal({type:"create-level"})}>➕ Créer un niveau</button>
+                    <button className="g-btn g-btn-ghost g-btn-sm" onClick={()=>window.parent.postMessage({type:"REQUEST_SUBJECTS"},"*")}>↻ Recharger</button>
+                  </div>
+                  <div className="g-tips">
+                    {[
+                      {icon:"1️⃣",t:"Connecte ton dossier",d:"Bannière en haut → «📂 Choisir le dossier». Sélectionne la racine du projet MathoDuo."},
+                      {icon:"2️⃣",t:"Crée la structure",d:"Niveau → Matière → Chapitre → Notion. Les fichiers .js sont générés automatiquement."},
+                      {icon:"3️⃣",t:"Édite les notions",d:"Clique sur une notion pour ouvrir l'éditeur. Ajoute des blocs (définition, formule, graphe…)."},
+                      {icon:"4️⃣",t:"Graphiques SVG",d:"Dans un bloc Graphe SVG, utilise le «📈 Constructeur visuel» pour créer des courbes et schémas."},
+                    ].map((t,i)=>(
+                      <div key={i} className="g-tip">
+                        <span className="g-tip__icon">{t.icon}</span>
+                        <div><div className="g-tip__title">{t.t}</div><div className="g-tip__desc">{t.d}</div></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <WelcomePanel stats={stats}/>
+              )}
+            </div>
+          </div>
+
+          {/* Modals */}
+          {modal?.type==="create-level"   && <ModalCreateLevel onConfirm={createLevel} onClose={()=>setModal(null)}/>}
+          {modal?.type==="create-subject" && <ModalCreateSubject levelId={modal.levelId} levelLabel={modal.levelLabel} onConfirm={d=>createSubject(modal.levelId,d)} onClose={()=>setModal(null)}/>}
+          {modal?.type==="create-chapter" && <ModalCreateChapter onConfirm={d=>{
+            const id=slugify(d.label)||("ch_"+genId());
+            setNewChapters(p=>{const n={...p};const k=modal.levelId+"|"+modal.subjectId;if(!n[k])n[k]={};n[k][id]={id,label:d.label,icon:d.icon||"📚",description:"",xpMax:200,notions:[],l1Notions:[]};return n;});
+            showToast("Chapitre «"+d.label+"» créé"); setModal(null);
+          }} onClose={()=>setModal(null)}/>}
+          {modal?.type==="create-notion"  && <ModalCreateNotion chapterLabel={modal.chapterLabel||""} onConfirm={label=>createNotion(modal.levelId,modal.subjectId,modal.chapterId,label)} onClose={()=>setModal(null)}/>}
+          {modal?.type==="rename-chapter" && <ModalRename title="✏️ Renommer le chapitre" current={modal.current} onConfirm={v=>renameChapter(modal.levelId,modal.subjectId,modal.chapterId,v)} onClose={()=>setModal(null)}/>}
+          {modal?.type==="rename-notion"  && <ModalRename title="✏️ Renommer la notion"   current={modal.current} onConfirm={v=>renameNotion(modal.levelId,modal.subjectId,modal.chapterId,modal.notionId,v)} onClose={()=>setModal(null)}/>}
+          {modal?.type==="delete-chapter" && <ModalConfirm title="Supprimer le chapitre" msg={`Supprimer «${modal.label}» et ses notions ? Irréversible.`} onConfirm={()=>deleteChapter(modal.levelId,modal.subjectId,modal.chapterId)} onClose={()=>setModal(null)}/>}
+          {modal?.type==="delete-notion"  && <ModalConfirm title="Supprimer la notion"   msg={`Supprimer «${modal.label}» ? Irréversible.`} onConfirm={()=>deleteNotion(modal.levelId,modal.subjectId,modal.chapterId,modal.notionId)} onClose={()=>setModal(null)}/>}
+
+          <CtxMenu menu={ctxMenu.menu} close={ctxMenu.close}/>
+          {toast && <div className="g-toast">✓ {toast}</div>}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(React.createElement(App));
+  </script>
+</body>
+</html>
