@@ -28,6 +28,7 @@ import Lementeur from '../premiere/français/Le menteur/index.js';
 import PréparationBac from '../premiere/français/Préparation bac/index.js';
 import preterit from '../premiere/Allemand/preterit/index.js';
 import cas from '../premiere/Allemand/cas/index.js';
+import StructureDesMolécules from '../premiere/physique/Structure des molécules/index.js';
 
 // ── Catalogue Matières → Niveaux ─────────────────────
 const SUBJECTS = {
@@ -65,7 +66,7 @@ const SUBJECTS = {
         color: '#ff7913',
         colorDark: '#3f1d02',
         icon: '⚛️',
-        chapitres: [revisiondevoircommunphysique, energie],},
+        chapitres: [revisiondevoircommunphysique, energie, StructureDesMolécules],},
       terminale : {
         id: 'terminale',
         label: 'Terminale',
